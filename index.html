@@ -270,12 +270,22 @@
                 this.fetchAllGoogleSheets();
             },
 
-            // 🚀 BẢN THAY THẾ CHÍNH XÁC: TỰ ĐỘNG KHỚP CẢ DẤU PHẨY (,) LẪN DẤU CHẤM PHẨY (;) CỦA TỪNG KHU VỰC SHEET
             splitCSVLine(line) {
-                if (line.includes(";")) {
-                    return line.split(";");
-                }
+                if (line.includes(";")) return line.split(";");
                 return line.split(",");
+            },
+
+            // 🚀 GIẢI PHÁP ĐỘT PHÁ: SỬ DỤNG REGEX ĐỂ BÓC TÁCH RIÊNG SỐ, KHỬ SẠCH ĐƠN VỊ °C HOẶC % GÂY NaN LỖI
+            cleanNum(val) {
+                if (val === undefined || val === null || String(val).trim() === "") return 0;
+                
+                // Thay dấu phẩy tiếng Việt thành dấu chấm thập phân chuẩn quốc tế
+                let str = String(val).replace(/"/g, "").replace(",", ".").trim();
+                
+                // Khử sạch toàn bộ các ký tự chữ, khoảng trắng và đơn vị (°C, %, uS/cm) chỉ giữ lại số và dấu chấm
+                let match = str.match(/[-+]?[0-9]*\.?[0-9]+/);
+                
+                return match ? (parseFloat(match[0]) || 0) : 0;
             },
 
             fetchAllGoogleSheets() {
@@ -287,7 +297,6 @@
                             const lines = csvText.split("\n");
                             if (lines.length < 2) return [];
 
-                            // Tự động phân tách tiêu đề Header dựa trên cả hai dấu phân cách
                             const headers = this.splitCSVLine(lines[0]).map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                             
                             const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
@@ -304,19 +313,13 @@
 
                                 const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
                                 
-                                // Chuẩn hóa chuỗi số nếu Google Sheet lưu dạng dấu phẩy kiểu VN (ví dụ: "32,5" -> "32.5")
-                                const cleanNum = (val) => {
-                                    if (!val) return 0;
-                                    return Number(String(val).replace(/"/g, "").replace(",", ".").trim()) || 0;
-                                };
-
                                 currentLogs.push({
                                     time: timeStr,
-                                    airT: idxAirT !== -1 ? cleanNum(cols[idxAirT]) : 0,
-                                    airH: idxAirH !== -1 ? cleanNum(cols[idxAirH]) : 0,
-                                    soilT: idxSoilT !== -1 ? cleanNum(cols[idxSoilT]) : 0,
-                                    soilH: idxSoilH !== -1 ? cleanNum(cols[idxSoilH]) : 0,
-                                    ec: idxEc !== -1 ? cleanNum(cols[idxEc]) : 0
+                                    airT: idxAirT !== -1 ? this.cleanNum(cols[idxAirT]) : 0,
+                                    airH: idxAirH !== -1 ? this.cleanNum(cols[idxAirH]) : 0,
+                                    soilT: idxSoilT !== -1 ? this.cleanNum(cols[idxSoilT]) : 0,
+                                    soilH: idxSoilH !== -1 ? this.cleanNum(cols[idxSoilH]) : 0,
+                                    ec: idxEc !== -1 ? this.cleanNum(cols[idxEc]) : 0
                                 });
                             }
                             return { key, data: currentLogs };
@@ -369,18 +372,12 @@
                             const cols = this.splitCSVLine(lines[i]);
                             const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
 
-                            const cleanNum = (val) => {
-                                if (!val) return "0.0";
-                                const n = Number(String(val).replace(/"/g, "").replace(",", ".").trim()) || 0;
-                                return n.toFixed(1);
-                            };
-
                             if (timeStr.includes(formattedDateCheck)) {
-                                const airT = idxAirT !== -1 ? cleanNum(cols[idxAirT]) : "0.0";
-                                const airH = idxAirH !== -1 ? cleanNum(cols[idxAirH]) : "0.0";
-                                const soilT = idxSoilT !== -1 ? cleanNum(cols[idxSoilT]) : "0.0";
-                                const soilH = idxSoilH !== -1 ? cleanNum(cols[idxSoilH]) : "0.0";
-                                const ec = idxEc !== -1 ? (Number(String(cols[idxEc]).replace(",", ".")) || 0) : 0;
+                                const airT = idxAirT !== -1 ? this.cleanNum(cols[idxAirT]).toFixed(1) : "0.0";
+                                const airH = idxAirH !== -1 ? this.cleanNum(cols[idxAirH]).toFixed(1) : "0.0";
+                                const soilT = idxSoilT !== -1 ? this.cleanNum(cols[idxSoilT]).toFixed(1) : "0.0";
+                                const soilH = idxSoilH !== -1 ? this.cleanNum(cols[idxSoilH]).toFixed(1) : "0.0";
+                                const ec = idxEc !== -1 ? this.cleanNum(cols[idxEc]) : 0;
 
                                 csvContent += timeStr + "," + airT + "," + airH + "," + soilT + "," + soilH + "," + ec + "\n";
                                 countRows++;
@@ -425,7 +422,7 @@
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: n3Data.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Outer Ngoài)', data: n3Data.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (this.activeChartType === 'air_hum') {
                         datasets = [
