@@ -321,9 +321,9 @@
             };
 
             watch(currentTab, (newTab) => {
-                if (newTab === 'realtime') tabTitle.value = 'Mục 1: Thông số trạm quan trắc thời gian thực';
-                if (newTab === 'database') tabTitle.value = 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ';
-                if (newTab === 'charts') { tabTitle.value = 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
+                if (newTab === 'realtime') tabTitle.value = 'Thông số trạm quan trắc thời gian thực';
+                if (newTab === 'database') tabTitle.value = 'Cơ sở dữ liệu lịch sử lưu trữ';
+                if (newTab === 'charts') { tabTitle.value = 'Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
             });
 
             return { isLoggedIn, currentTab, activeDbNode, tabTitle, loginForm, loginError, handleLogin, logout, nodes, logs };
