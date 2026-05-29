@@ -10,14 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; --navy-dark: #1e3a8a; }
+        :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; margin: 0; }
 
         #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
         .login-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 100%; max-width: 420px; }
         
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
-        .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 20px 15px; }
+        .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
         .nav-link { color: #a7f3d0; padding: 14px 24px; display: flex; align-items: center; gap: 15px; text-decoration: none; transition: 0.3s; font-weight: 500; margin: 4px 16px; border-radius: 12px; }
         .nav-link:hover, .nav-link.active { background: rgba(255, 255, 255, 0.15); color: white; font-weight: 600; }
 
@@ -26,10 +26,14 @@
         .node-header { background: #f8fafc; padding: 16px 24px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         .sensor-row { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         .sensor-val { font-size: 20px; font-weight: 700; }
+
         .table-container { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; }
         .node-selector-btn { padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; background: white; color: #475569; transition: 0.2s; }
         .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .filter-input { padding: 8px 12px; border-radius: 10px; border: 1px solid #cbd5e1; background: #f8fafc; outline: none; }
+        
+        .blink-alert { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0.5; } }
+        
         canvas { width: 100% !important; height: 380px !important; }
         [v-cloak] { display: none; }
     </style>
@@ -40,15 +44,15 @@
     <div v-if="!isLoggedIn" id="login-page">
         <div class="login-card text-center">
             <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-4" style="max-height: 100px;">
-            <button @click="handleLogin" class="btn btn-success w-100 py-2.5 fw-bold" style="border-radius:12px; background: var(--primary);">ĐĂNG NHẬP</button>
+            <button @click="handleLogin" class="btn btn-success w-100 py-2.5 fw-bold" style="border-radius:12px; background: var(--primary);">ĐĂNG NHẬP HỆ THỐNG</button>
         </div>
     </div>
 
     <div v-else>
         <nav id="sidebar">
             <div class="brand-zone text-center">
-                <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Trường" class="img-fluid mb-2" style="max-height: 75px; border-radius: 50%; background: white; padding: 4px;">
-                <h5 class="fw-800 mb-0 text-white" style="letter-spacing: 0.5px; font-size: 16px;">Greenhouse</h5>
+                <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-2" style="max-height: 50px; filter: brightness(0) invert(1);">
+                <h5 class="fw-800 mb-0 text-white">Greenhouse</h5>
             </div>
             <div class="mt-4">
                 <a href="#" @click="currentTab = 'realtime'" class="nav-link" :class="{active: currentTab == 'realtime'}"><i class="fa-solid fa-chart-pie"></i> Realtime</a>
@@ -58,6 +62,13 @@
         </nav>
 
         <main id="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
+                <h3 class="fw-800 m-0">Giám sát hệ thống</h3>
+                <div class="badge px-3 py-2" :class="isWifiLost ? 'bg-danger blink-alert' : 'bg-success'">
+                    {{ isWifiLost ? 'NO WIFI CONNECTED' : 'LIVE CONNECTED' }}
+                </div>
+            </header>
+
             <div v-if="currentTab == 'realtime'">
                 <div class="row">
                     <div v-for="i in [1, 2, 3]" :key="'rt-'+i" class="col-md-4">
@@ -73,13 +84,21 @@
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
+    const firebaseConfig = { databaseURL: "https://do-an-tot-nghiep-f587e-default-rtdb.asia-southeast1.firebasedatabase.app" };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
     const app = Vue.createApp({
         data() {
             return {
                 isLoggedIn: false,
                 currentTab: 'realtime',
+                isWifiLost: false,
+                lastHeartbeat: { Node1: Date.now(), Node2: Date.now(), Node3: Date.now() },
                 nodes: {
                     Node1: { airT: 0, airH: 0 },
                     Node2: { airT: 0, airH: 0 },
@@ -88,11 +107,32 @@
                 logs: { Node1: [], Node2: [], Node3: [] }
             }
         },
+        mounted() {
+            // Kiểm tra sau 25 giây không nhận được dữ liệu mới
+            setInterval(() => {
+                const now = Date.now();
+                ['Node1', 'Node2', 'Node3'].forEach(k => {
+                    if (now - this.lastHeartbeat[k] > 25000) {
+                        this.isWifiLost = true;
+                    }
+                });
+            }, 5000);
+        },
         methods: {
-            handleLogin() { this.isLoggedIn = true; this.loadData(); },
-            // Code cũ của bạn sẽ nạp tại đây...
-            loadData() {
-                // Sử dụng 3 link CSV bạn vừa cung cấp để nạp dữ liệu vào mảng logs
+            handleLogin() { 
+                this.isLoggedIn = true; 
+                this.initFirebase();
+            },
+            initFirebase() {
+                ['Node1', 'Node2', 'Node3'].forEach(key => {
+                    database.ref('/' + key + '/History').limitToLast(1).on('child_added', (snapshot) => {
+                        this.lastHeartbeat[key] = Date.now();
+                        this.isWifiLost = false;
+                        const val = snapshot.val();
+                        this.nodes[key].airT = val.air_temperature;
+                        this.nodes[key].airH = val.air_humidity;
+                    });
+                });
             }
         }
     });
