@@ -72,7 +72,7 @@
     <div v-else>
         <nav id="sidebar">
             <div class="brand-zone text-center">
-                <img src="https://stec.hcmuaf.edu.vn/images/logo.png" alt="Logo Khoa Cơ khí Công nghệ" class="img-fluid mb-2" style="max-height: 75px; border-radius: 50%; background: white; padding: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Đại Học Nông Lâm" class="img-fluid mb-2" style="max-height: 75px; border-radius: 50%; background: white; padding: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
                 <h5 class="fw-800 mb-0 text-white" style="letter-spacing: 0.5px; font-size: 16px;">Greenhouse</h5>
             </div>
             <div class="mt-4">
@@ -197,7 +197,6 @@
                 currentTab: 'realtime',
                 activeDbNode: 'Node1',
                 activeChartType: 'air_temp',
-                // ĐÃ CẬP NHẬT: Xóa chữ Mục 1, Mục 2 ở tiêu đề chính
                 tabTitle: 'Thông số trạm quan trắc thời gian thực',
                 loginForm: { user: '', pass: '' },
                 loginError: false,
@@ -223,7 +222,6 @@
         },
         watch: {
             currentTab(newTab) {
-                // ĐÃ CẬP NHẬT: Xóa chữ Mục 1, Mục 2, Mục 3 ở luồng gán tiêu đề động
                 if (newTab === 'realtime') this.tabTitle = 'Thông số trạm quan trắc thời gian thực';
                 if (newTab === 'database' || newTab === 'charts') { 
                     this.tabTitle = newTab === 'database' ? 'Cơ sở dữ liệu lịch sử lưu trữ' : 'Đồ thị phân tích diễn tiến môi trường'; 
