@@ -55,17 +55,17 @@
             
             <div class="mb-3 text-start">
                 <label class="form-label small fw-600 text-secondary">Tài khoản quản trị</label>
-                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản...">
+                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tên đăng nhập của bạn...">
             </div>
             <div class="mb-4 text-start">
                 <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
                 <div class="password-wrapper">
-                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu..." @keyup.enter="handleLogin">
+                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mã số sinh viên..." @keyup.enter="handleLogin">
                     <i class="fa-solid password-toggle" :class="passwordFieldType === 'password' ? 'fa-eye-slash' : 'fa-eye'" @click="togglePasswordVisibility"></i>
                 </div>
             </div>
             <button @click="handleLogin" class="btn btn-success w-100 py-2.5 fw-bold shadow-sm" style="border-radius:12px; background: var(--primary);">ĐĂNG NHẬP HỆ THỐNG</button>
-            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai tài khoản hoặc mật khẩu bạng ơi!</p>
+            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai thông tin tài khoản hoặc MSSV!</p>
         </div>
     </div>
 
@@ -199,8 +199,6 @@
             const loginForm = reactive({ user: '', pass: '' });
             const loginError = ref(false);
             const passwordFieldType = ref('password'); 
-            
-            // Khởi tạo ngày hiện tại làm mặc định cho ô Filter xuất file (.csv)
             const filterDate = ref(new Date().toISOString().split('T')[0]); 
             let chartInstance = null;
 
@@ -225,15 +223,20 @@
             };
 
             const handleLogin = () => {
-                if (loginForm.user.trim() === 'doantotnghiep' && loginForm.pass === '12345678') { 
+                const username = loginForm.user.trim().toLowerCase();
+                const password = loginForm.pass.trim();
+
+                if ((username === 'baokhang' && password === '22138043') || 
+                    (username === 'thekiet' && password === '22138051')) { 
                     isLoggedIn.value = true; 
+                    loginError.value = false;
                     initFirebase(); 
                 } else { 
                     loginError.value = true; 
                 }
             };
 
-            const logout = () => { isLoggedIn.value = false; loginForm.pass = ''; };
+            const logout = () => { isLoggedIn.value = false; loginForm.user = ''; loginForm.pass = ''; };
 
             const initFirebase = () => {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
@@ -268,20 +271,17 @@
                 });
             };
 
-            // THUẬT TOÁN ĐÍNH KÈM NGÀY ĐÃ CHỌN VÀO FILE NHẬT KÝ ĐÚNG HÌNH 3 THEO YÊU CẦU
             const exportCSVForCurrentNode = () => {
                 const targetLogs = logs[activeDbNode.value];
                 if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
                 
-                // Định dạng ngày chọn từ YYYY-MM-DD thành DD/MM/YYYY để ghi vào file
                 const rawDate = filterDate.value.split('-');
                 const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
 
                 let csvContent = "\uFEFF"; 
-                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; // Tiêu đề cột chuẩn
+                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
                 
                 targetLogs.forEach(item => {
-                    // Ghép ngày chọn bên ngoài với giờ log nhận từ mạch để ra định dạng cột A giống hệt hình 3
                     const fullTimeField = formattedDate + " " + item.time;
                     csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
                 });
@@ -289,7 +289,6 @@
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a");
                 link.href = URL.createObjectURL(blob);
-                // Đặt tên file đính kèm chính xác mã Node và Ngày được lọc
                 link.setAttribute("download", "NhatKy_" + activeDbNode.value + "_Ngay_" + filterDate.value + ".csv");
                 document.body.appendChild(link);
                 link.click();
@@ -312,7 +311,7 @@
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'soil_temp') {
                         datasets = [
