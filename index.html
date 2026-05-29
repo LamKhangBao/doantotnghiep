@@ -265,21 +265,20 @@
         renderChartGraphics();
     }
 
-    // 🚀 THUẬT TOÁN ĐỒNG BỘ ĐÃ ĐƯỢC CHUẨN HÓA SỬA LỖI TRÍCH XUẤT CẤP OBJECT LỒNG
+    // 🚀 THUẬT TOÁN ĐÃ ĐƯỢC CHUẨN HÓA VÀ FIX LỖI ĐỌC PHẦN TỬ CUỐI MẢNG CHÍNH XÁC
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
-            // Lắng nghe nhánh lịch sử và giải nén Object lồng từ mã khóa Push ID vĩnh viễn
+            // Đọc 1 dòng cuối cùng và trỏ đúng chỉ số mảng [length - 1] (Mốc tin mới nhất)
             database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
-                    // Trích xuất mảng giá trị bên trong Object lồng cấp
                     const dataValues = Object.values(historyData);
-                    const val = dataValues[0]; // Bóc mốc phần tử sạch cuối cùng vừa gửi
+                    // BẮT BUỘC: Lấy phần tử có index cuối cùng trong danh sách để nhận dữ liệu mới nhất từ ESP32
+                    const val = dataValues[dataValues.length - 1]; 
                     
                     if (val) {
-                        // Cập nhật số liệu hiển thị thực tế lên ID màn hình
                         document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
                         document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
                         if (key !== 'Node3') {
@@ -291,7 +290,7 @@
                 }
             });
 
-            // Lắng nghe đồng bộ mảng 10 dòng
+            // Đồng bộ dữ liệu bảng lịch sử 10 dòng
             database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
@@ -363,13 +362,13 @@
             datasets = [
                 { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                 { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
             ];
         } else if (activeChartType === 'air_hum') {
             datasets = [
                 { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                 { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
             ];
         } else if (activeChartType === 'soil_temp') {
             datasets = [
