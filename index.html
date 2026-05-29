@@ -10,31 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { 
-            --primary: #2563eb; 
-            --success: #10b981; 
-            --warning: #f59e0b; 
-            --danger: #ef4444; 
-            --dark-bg: #0f172a; 
-            --sidebar-width: 280px; 
-        }
+        :root { --primary: #2563eb; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #0f172a; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; }
 
-        /* Màn hình đăng nhập */
-        #login-page { 
-            height: 100vh; display: flex; align-items: center; justify-content: center; 
-            background: radial-gradient(circle at 10% 20%, rgb(4, 32, 107) 0%, rgb(11, 132, 114) 90%); 
-        }
+        /* Login Screen */
+        #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 10% 20%, rgb(4, 32, 107) 0%, rgb(11, 132, 114) 90%); }
         .login-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); padding: 45px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; max-width: 420px; border: 1px solid rgba(255,255,255,0.2); }
         .login-card input { border-radius: 12px; padding: 12px; border: 1px solid #cbd5e1; }
 
-        /* Menu điều phối bên trái (Sidebar) */
+        /* Sidebar Menu */
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
         .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 30px 20px; }
         .nav-link { color: #94a3b8; padding: 14px 24px; display: flex; align-items: center; gap: 15px; text-decoration: none; transition: 0.3s; font-weight: 500; margin: 4px 16px; border-radius: 12px; }
         .nav-link:hover, .nav-link.active { background: rgba(37, 99, 235, 0.15); color: #60a5fa; font-weight: 600; }
 
-        /* Khung nội dung bên phải */
+        /* Content Area */
         #main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; }
         .node-card { background: white; border: none; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(15,23,42,0.03); margin-bottom: 30px; border: 1px solid #f1f5f9; }
         .node-header { background: #fafbfc; padding: 16px 24px; font-weight: 700; border-bottom: 1px solid #f1f5f9; }
@@ -43,20 +33,13 @@
         .sensor-title { font-size: 14px; color: #64748b; font-weight: 500; }
         .sensor-val { font-size: 20px; font-weight: 700; }
 
-        /* Thống kê dữ liệu bảng */
+        /* Table Components */
         .table-container { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
         .table thead th { background-color: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; padding: 14px; }
         
-        /* 3 Nút chuyển đổi Tab cao cấp */
-        .node-selector-btn {
-            padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px;
-            transition: 0.2s; border: 1px solid #e2e8f0; background: white; color: #475569;
-        }
-        .node-selector-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
-        .node-selector-btn.active {
-            background: var(--primary); color: white; border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
+        .node-selector-btn { padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: 0.2s; border: 1px solid #e2e8f0; background: white; color: #475569; }
+        .node-selector-btn:hover { background: #f8fafc; }
+        .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
 
         canvas { width: 100% !important; height: 380px !important; }
         [v-cloak] { display: none; }
@@ -80,7 +63,7 @@
                 <input type="password" v-model="loginForm.pass" class="form-control" placeholder="********">
             </div>
             <button @click="handleLogin" class="btn btn-primary w-100 py-2.5 fw-bold" style="border-radius:12px;">ĐĂNG NHẬP HỆ THỐNG</button>
-            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai thông tin xác thực bạng ơi!</p>
+            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai thông tin xác thực!</p>
         </div>
     </div>
 
@@ -112,7 +95,7 @@
             <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
                 <div>
                     <h3 class="fw-800 m-0 text-dark">{{ tabTitle }}</h3>
-                    <p class="text-muted small m-0 mt-1">Dữ liệu kết nối đồng bộ trực tiếp từ Firebase Cloud Server</p>
+                    <p class="text-muted small m-0 mt-1">Dữ liệu lưu trữ đám mây đồng bộ liên tục</p>
                 </div>
                 <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;">
                     <span class="spinner-grow spinner-grow-sm" role="status"></span> HỆ THỐNG TRỰC TUYẾN
@@ -165,7 +148,7 @@
                                 <span class="sensor-val text-primary">{{ nodes.Node3.air_humidity }} %</span>
                             </div>
                             <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;">
-                                <i class="fa-solid fa-circle-info me-1"></i> Khối cảm biến đất không được cấu hình cho thiết bị trạm này.
+                                <i class="fa-solid fa-circle-info me-1"></i> Khối đất không được cấu hình cho trạm này.
                             </div>
                         </div>
                     </div>
@@ -189,7 +172,7 @@
 
                     <div class="table-responsive">
                         <h5 class="fw-700 text-secondary mb-3">
-                            <i class="fa-solid fa-table-list me-2 text-primary"></i>Bảng nhật ký dữ liệu: {{ activeDbNode == 'Node1' ? 'Trạm Quan Trắc 01' : activeDbNode == 'Node2' ? 'Trạm Quan Trắc 02' : 'Trạm Không Khí 03' }}
+                            <i class="fa-solid fa-table-list me-2 text-primary"></i>Lịch sử trích xuất từ Firebase Cloud: {{ activeDbNode == 'Node1' ? 'Trạm 01' : activeDbNode == 'Node2' ? 'Trạm 02' : 'Trạm 03' }}
                         </h5>
                         
                         <table class="table table-hover align-middle border-0 m-0">
@@ -214,7 +197,7 @@
                                 </tr>
                                 <tr v-if="logs[activeDbNode].length === 0">
                                     <td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">
-                                        <i class="fa-solid fa-spinner fa-spin me-2"></i>Hệ thống đang chờ xung tín hiệu truyền tải tự động từ vi điều khiển...
+                                        <i class="fa-solid fa-clock-rotate-left fa-spin me-2"></i>Đang truy vấn lịch sử vĩnh viễn từ Firebase Server...
                                     </td>
                                 </tr>
                             </tbody>
@@ -253,8 +236,8 @@
         setup() {
             const isLoggedIn = ref(false);
             const currentTab = ref('realtime');
-            const activeDbNode = ref('Node1'); // Biến cốt lõi quản lý bật/tắt Tab trong Mục 2
-            const tabTitle = ref('Mục 1: Thông số trạm quan trắc thời gian thực');
+            const activeDbNode = ref('Node1'); 
+            const tabTitle = ref('Mục 1: Thông số trạm quan thực thời gian thực');
             const loginForm = reactive({ user: '', pass: '' });
             const loginError = ref(false);
             let chartInstance = null;
@@ -270,34 +253,43 @@
             const handleLogin = () => {
                 if (loginForm.user === 'doantotnghiep' && loginForm.pass === '12345678') {
                     isLoggedIn.value = true;
-                    initFirebase();
+                    initFirebase(); 
                 } else { loginError.value = true; }
             };
 
             const logout = () => { isLoggedIn.value = false; };
 
+            // HÀM KHỞI TẠO FIREBASE ĐỌC LỊCH SỬ TỪ SERVER LÊN WEB
             const initFirebase = () => {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
+
+                // 1. Đọc dữ liệu Realtime hiện tại của 3 Node
                 nodeKeys.forEach(key => {
                     database.ref('/' + key).on('value', (snapshot) => {
                         const val = snapshot.val();
-                        if (val) {
-                            nodes[key] = val;
-                        } else {
-                            if (key === 'Node3') { nodes[key] = { air_temperature: 0, air_humidity: 0 }; } 
-                            else { nodes[key] = { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 }; }
-                        }
+                        if (val) { nodes[key] = val; }
+                    });
+                });
 
-                        if (val) {
-                            if (logs[key].length > 15) logs[key].shift();
-                            logs[key].push({
-                                time: new Date().toLocaleTimeString(),
-                                airT: val.air_temperature || 0,
-                                airH: val.air_humidity || 0,
-                                soilT: val.soil_temperature || 0,
-                                soilH: val.soil_humidity || 0,
-                                ec: val.soil_ec || 0
+                // 2. CƠ CHẾ ĐỒNG BỘ LỊCH SỬ VĨNH VIỄN: Quét mục /History trên Firebase đổ thẳng vào mảng logs trên Web
+                nodeKeys.forEach(key => {
+                    database.ref('/History/' + key).limitToLast(40).on('value', (snapshot) => {
+                        const historyData = snapshot.val();
+                        if (historyData) {
+                            const tempArray = [];
+                            // Duyệt qua chuỗi Object ngẫu nhiên của lệnh push để bóc tách dữ liệu sạch
+                            Object.keys(historyData).forEach(id => {
+                                const logItem = historyData[id];
+                                tempArray.push({
+                                    time: logItem.time_log || new Date().toLocaleTimeString(),
+                                    airT: logItem.air_temperature || 0,
+                                    airH: logItem.air_humidity || 0,
+                                    soilT: logItem.soil_temperature || 0,
+                                    soilH: logItem.soil_humidity || 0,
+                                    ec: logItem.soil_ec || 0
+                                });
                             });
+                            logs[key] = tempArray; // Đổ toàn bộ mảng dữ liệu quá khứ vào bảng công khai
                             if (currentTab.value === 'charts') { renderChart(); }
                         }
                     });
@@ -321,9 +313,7 @@
                             ]
                         },
                         options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            animation: { duration: 0 },
+                            responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
                             scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
                         }
                     });
