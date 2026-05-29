@@ -28,6 +28,7 @@
 
         #main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; }
         .node-card { background: white; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(6,78,59,0.02); margin-bottom: 30px; border: 1px solid #e2e8f0; }
+        .node-card { background: white; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(6,78,59,0.02); margin-bottom: 30px; border: 1px solid #e2e8f0; }
         .node-header { background: #f8fafc; padding: 16px 24px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         .sensor-row { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         .sensor-val { font-size: 20px; font-weight: 700; }
@@ -51,16 +52,16 @@
         <div class="login-card text-center">
             <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-4" style="max-height: 100px;">
             <h5 class="fw-800 mb-1 text-dark">TRƯỜNG ĐẠI HỌC NÔNG LÂM</h5>
-            <p class="text-muted small mb-4">Hệ Thống Giám Sát Điều Phối Nhà Màng</p>
+            <p class="text-muted small mb-4">Hệ Thống Giám Sát Điều Phối Nhà Màng | Nhóm 9</p>
             
             <div class="mb-3 text-start">
                 <label class="form-label small fw-600 text-secondary">Tài khoản quản trị</label>
-                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản đăng nhập...">
+                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản...">
             </div>
             <div class="mb-4 text-start">
                 <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
                 <div class="password-wrapper">
-                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mã số sinh viên..." @keyup.enter="handleLogin">
+                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu..." @keyup.enter="handleLogin">
                     <i class="fa-solid password-toggle" :class="passwordFieldType === 'password' ? 'fa-eye-slash' : 'fa-eye'" @click="togglePasswordVisibility"></i>
                 </div>
             </div>
@@ -277,36 +278,74 @@
                     });
                 });
             },
+            
+            // 🚀 ĐÂY LÀ HÀM ĐÃ ĐƯỢC THAY ĐỔI THUẬT TOÁN ĐỂ QUÉT TOÀN BỘ KHO FIREBASE ĐỂ LỌC NGÀY KHÔNG GIỚI HẠN
             exportCSVForCurrentNode() {
-                const targetLogs = this.logs[this.activeDbNode];
-                if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
-                
-                const rawDate = this.filterDate.split('-');
-                const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
+                const selectedNode = this.activeDbNode;
+                const chosenDate = this.filterDate; // Định dạng YYYY-MM-DD từ input date
 
-                // CẬP NHẬT LỆNH sep=, CHIA HÀNG CỘT THEO ĐÚNG Ý BẠN
-                let csvContent = "\uFEFFsep=,\n"; 
-                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
-                
-                targetLogs.forEach(item => {
-                    const fullTimeField = formattedDate + " " + item.time;
-                    csvContent += fullTimeField + "," + Number(item.airT).toFixed(1) + "," + Number(item.airH).toFixed(1) + "," + Number(item.soilT).toFixed(1) + "," + Number(item.soilH).toFixed(1) + "," + item.ec + "\n";
+                // Chuyển cấu trúc chọn từ YYYY-MM-DD sang chuỗi DD/MM/YYYY giống chuỗi trong cột thời gian của bạn
+                const rawDate = chosenDate.split('-');
+                const formattedDateCheck = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
+
+                alert("Hệ thống đang quét ngầm toàn bộ dữ liệu lịch sử trên đám mây cho ngày " + formattedDateCheck + ". Vui lòng đợi trong giây lát...");
+
+                // Quét ngầm một lần (.once) vào thư mục gốc của History chứ không lấy mảng limit(10)
+                database.ref('/' + selectedNode + '/History').once('value').then((snapshot) => {
+                    const allHistory = snapshot.val();
+                    
+                    if (!allHistory) {
+                        alert("Không tìm thấy bất kỳ dữ liệu lịch sử nào của trạm này trên Firebase Database!");
+                        return;
+                    }
+
+                    let csvContent = "\uFEFFsep=,\n"; 
+                    csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
+
+                    let countRows = 0;
+
+                    // Lặp qua toàn bộ Push ID lồng cấp của cả kho dữ liệu Firebase từ trước tới nay
+                    Object.keys(allHistory).forEach(pushId => {
+                        const logItem = allHistory[pushId];
+                        const fullTimeStr = String(logItem.time_log || "").replace(/"/g, "");
+
+                        // Kiểm tra xem dòng dữ liệu này có chứa chuỗi Ngày mà hai bạn chọn lọc hay không
+                        if (fullTimeStr.includes(formattedDateCheck)) {
+                            const airT = Number(logItem.air_temperature || 0).toFixed(1);
+                            const airH = Number(logItem.air_humidity || 0).toFixed(1);
+                            const soilT = Number(logItem.soil_temperature || 0).toFixed(1);
+                            const soilH = Number(logItem.soil_humidity || 0).toFixed(1);
+                            const ec = logItem.soil_ec || 0;
+
+                            csvContent += fullTimeStr + "," + airT + "," + airH + "," + soilT + "," + soilH + "," + ec + "\n";
+                            countRows++;
+                        }
+                    });
+
+                    if (countRows === 0) {
+                        alert("Tìm thấy 0 kết quả! Trên đám mây không có gói tin nào thuộc ngày " + formattedDateCheck + ".");
+                        return;
+                    }
+
+                    // Tiến hành đóng gói và tải xuống
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.setAttribute("download", "NhatKy_ToanBo_" + selectedNode + "_Ngay_" + chosenDate + ".csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                }).catch(error => {
+                    console.error(error);
+                    alert("Lỗi luồng đồng bộ Firebase: " + error.message);
                 });
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.setAttribute("download", "NhatKy_" + this.activeDbNode + "_Ngay_" + this.filterDate + ".csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             },
             renderChart() {
                 setTimeout(() => {
                     const ctx = document.getElementById('academicTempChart'); 
                     if (!ctx) return;
                     
-                    // 🚀 THÊM KHÓA BẢO VỆ CHỐNG CRASH TRẮNG MÀN HÌNH TẠI ĐÂY
                     if (!this.logs.Node1 || this.logs.Node1.length === 0 || !this.logs.Node2 || this.logs.Node2.length === 0 || !this.logs.Node3 || this.logs.Node3.length === 0) {
                         return;
                     }
