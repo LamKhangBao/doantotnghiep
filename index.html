@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Smart Greenhouse | Đồ Án Tốt Nghiệp</title>
+    <title>Hệ Thống Smart Greenhouse AI | Đồ Án Tốt Nghiệp</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -13,7 +13,7 @@
         :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; margin: 0; }
 
-        /* Login Design Nông Lâm */
+        /* Login Design */
         #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
         .login-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 100%; max-width: 420px; }
         
@@ -99,8 +99,8 @@
 
             <div v-if="currentTab == 'realtime'">
                 <div class="row">
-                    <div v-for="i in [1, 2]" class="col-md-4">
-                        <div class="node-card">
+                    <div v-for="i in [1, 2]" :key="'realtime-node-' + i" class="col-md-4">
+                        <div class="node-card" v-if="nodes['Node'+i]">
                             <div class="node-header text-dark d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-building-shield text-emerald-600 me-2"></i>TRẠM TRONG NHÀ MÀNG 0{{i}}</span><span class="badge bg-success-subtle text-success">Inside</span></div>
                             <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-primary">{{ formatNumber(nodes['Node'+i].air_temperature) }} °C</span></div>
                             <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-success">{{ formatNumber(nodes['Node'+i].air_humidity) }} %</span></div>
@@ -110,11 +110,11 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="node-card" style="border-top: 4px solid var(--warning);">
+                        <div class="node-card" style="border-top: 4px solid var(--warning);" v-if="nodes.Node3">
                             <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span><span class="badge bg-warning-subtle text-warning">Outside</span></div>
                             <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_temperature) }} °C</span></div>
                             <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_humidity) }} %</span></div>
-                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài (Mát hơn và khô hơn bên trong).</div>
+                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-cloud me-1"></i> Trạm đối chứng khí tượng bên ngoài (Mát hơn và khô hơn bên trong).</div>
                         </div>
                     </div>
                 </div>
@@ -152,7 +152,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="log in logs[activeDbNode].slice().reverse()">
+                                <tr v-for="(log, index) in (logs[activeDbNode] || []).slice().reverse()" :key="'log-'+index">
                                     <td class="fw-600 text-emerald-700"><i class="fa-regular fa-clock me-1 text-muted"></i>{{ log.time }}</td>
                                     <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ formatNumber(log.airT) }} °C</span></td>
                                     <td><span class="badge bg-success-subtle text-success fw-bold">{{ formatNumber(log.airH) }} %</span></td>
@@ -160,7 +160,7 @@
                                     <td v-if="activeDbNode != 'Node3'">{{ formatNumber(log.soilH) }} %</td>
                                     <td v-if="activeDbNode != 'Node3'" class="fw-bold text-dark">{{ log.ec }} uS/cm</td>
                                 </tr>
-                                <tr v-if="logs[activeDbNode].length === 0"><td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">Đang lắng nghe gói xung từ vi điều khiển...</td></tr>
+                                <tr v-if="!logs[activeDbNode] || logs[activeDbNode].length === 0"><td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">Đang lắng nghe gói xung từ vi điều khiển...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -209,6 +209,7 @@
             const filterDate = ref(new Date().toISOString().split('T')[0]); 
             let chartInstance = null;
 
+            // Khởi tạo các giá trị mặc định để tránh lỗi crash undefined ngay vòng render đầu tiên
             const nodes = reactive({
                 Node1: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
                 Node2: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
@@ -229,8 +230,9 @@
                 passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
             };
 
-            // Hàm kiểm tra an toàn, ngăn chặn triệt để lỗi trắng màn hình
+            // Hàm kiểm tra định dạng số an toàn tuyệt đối chặn hoàn toàn lỗi trắng màn hình
             const formatNumber = (val) => {
+                if (val === undefined || val === null) return "0.0";
                 const num = Number(val);
                 return isNaN(num) ? "0.0" : num.toFixed(1);
             };
@@ -254,7 +256,7 @@
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
                 nodeKeys.forEach(key => {
                     
-                    // Luồng nguyên bản của bạn: Đọc trực tiếp ngoài biến phẳng gốc nuôi Mục 1 Realtime
+                    // Đọc gói dữ liệu ngoài gốc nuôi Realtime Mục 1 chuẩn xác
                     database.ref('/' + key).on('value', (snapshot) => {
                         const val = snapshot.val();
                         if (val) {
@@ -268,20 +270,23 @@
                         }
                     });
 
-                    // Luồng đồng bộ mảng lịch sử 10 dòng
-                    logs[key] = [];
-                    database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
-                        const logItem = snapshot.val();
-                        if (logItem) {
-                            logs[key].push({
-                                time: String(logItem.time_log || "").replace(/"/g, ""), 
-                                airT: logItem.air_temperature, 
-                                airH: logItem.air_humidity,
-                                soilT: logItem.soil_temperature, 
-                                soilH: logItem.soil_humidity,
-                                ec: logItem.soil_ec || 0
+                    // Thuật toán đồng bộ Lịch sử (Mục 2 & Mục 3) - Cấu trúc chống kẹt mảng
+                    database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
+                        const historyData = snapshot.val();
+                        if (historyData) {
+                            const tempArray = [];
+                            Object.keys(historyData).forEach(id => {
+                                const logItem = historyData[id];
+                                tempArray.push({
+                                    time: String(logItem.time_log || "").replace(/"/g, ""), 
+                                    airT: logItem.air_temperature, 
+                                    airH: logItem.air_humidity,
+                                    soilT: logItem.soil_temperature, 
+                                    soilH: logItem.soil_humidity,
+                                    ec: logItem.soil_ec || 0
+                                });
                             });
-                            if (logs[key].length > 10) logs[key].shift();
+                            logs[key] = tempArray;
                             if (currentTab.value === 'charts') { renderChart(); }
                         }
                     });
@@ -291,7 +296,7 @@
             // Hàm xuất Excel tách cột ngăn nắp chuẩn 100% bằng lệnh sep=,
             const exportCSVForCurrentNode = () => {
                 const targetLogs = logs[activeDbNode.value];
-                if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
+                if (!targetLogs || targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
                 
                 const rawDate = filterDate.value.split('-');
                 const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
@@ -317,34 +322,37 @@
                 setTimeout(() => {
                     const ctx = document.getElementById('academicTempChart'); if (!ctx) return;
                     if (chartInstance) { chartInstance.destroy(); }
-                    const labels = logs.Node1.map(l => l.time); let datasets = [];
+                    
+                    const safeNode1Logs = logs.Node1 || [];
+                    const labels = safeNode1Logs.map(l => l.time); 
+                    let datasets = [];
 
                     if (activeChartType.value === 'air_temp') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: (logs.Node1 || []).map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: (logs.Node2 || []).map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: (logs.Node3 || []).map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'air_hum') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: (logs.Node1 || []).map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: (logs.Node2 || []).map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: (logs.Node3 || []).map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'soil_temp') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.soilT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.soilT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: (logs.Node1 || []).map(l => l.soilT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: (logs.Node2 || []).map(l => l.soilT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'soil_hum') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.soilH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.soilH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: (logs.Node1 || []).map(l => l.soilH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: (logs.Node2 || []).map(l => l.soilH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'soil_ec') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.ec), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.ec), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: (logs.Node1 || []).map(l => l.ec), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: (logs.Node2 || []).map(l => l.ec), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     }
 
