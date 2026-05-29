@@ -20,7 +20,7 @@
         .password-wrapper { position: relative; }
         .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; z-index: 10; }
 
-        /* Sidebar & Layout */
+        /* Sidebar & Layout điều phối */
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
         .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
         .nav-link { color: #a7f3d0; padding: 14px 24px; display: flex; align-items: center; gap: 15px; text-decoration: none; transition: 0.3s; font-weight: 500; margin: 4px 16px; border-radius: 12px; }
@@ -55,17 +55,17 @@
             
             <div class="mb-3 text-start">
                 <label class="form-label small fw-600 text-secondary">Tài khoản quản trị</label>
-                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản...">
+                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản đăng nhập...">
             </div>
             <div class="mb-4 text-start">
                 <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
                 <div class="password-wrapper">
-                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu..." @keyup.enter="handleLogin">
+                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mã số sinh viên..." @keyup.enter="handleLogin">
                     <i class="fa-solid password-toggle" :class="passwordFieldType === 'password' ? 'fa-eye-slash' : 'fa-eye'" @click="togglePasswordVisibility"></i>
                 </div>
             </div>
             <button @click="handleLogin" class="btn btn-success w-100 py-2.5 fw-bold shadow-sm" style="border-radius:12px; background: var(--primary);">ĐĂNG NHẬP HỆ THỐNG</button>
-            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai tài khoản hoặc mật khẩu bạng ơi!</p>
+            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai tài khoản hoặc mã số sinh viên bạng ơi!</p>
         </div>
     </div>
 
@@ -152,7 +152,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(log, index) in logs[activeDbNode]" :key="'log-'+index">
+                                <tr v-for="(log, index) in reversedLogs" :key="'log-'+index">
                                     <td class="fw-600 text-emerald-700"><i class="fa-regular fa-clock me-1 text-muted"></i>{{ log.time }}</td>
                                     <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ formatNumber(log.airT) }} °C</span></td>
                                     <td><span class="badge bg-success-subtle text-success fw-bold">{{ formatNumber(log.airH) }} %</span></td>
@@ -160,7 +160,7 @@
                                     <td v-if="activeDbNode != 'Node3'">{{ formatNumber(log.soilH) }} %</td>
                                     <td v-if="activeDbNode != 'Node3'" class="fw-bold text-dark">{{ log.ec }} uS/cm</td>
                                 </tr>
-                                <tr v-if="!logs[activeDbNode] || logs[activeDbNode].length === 0"><td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">Đang lắng nghe gói xung từ vi điều khiển...</td></tr>
+                                <tr v-if="reversedLogs.length === 0"><td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">Đang lắng nghe gói xung từ vi điều khiển...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -217,6 +217,12 @@
 
             const logs = reactive({ Node1: [], Node2: [], Node3: [] });
 
+            // Computed đảo ngược mảng tĩnh an toàn cho bảng mục 2
+            const reversedLogs = computed(() => {
+                const currentLogs = logs[activeDbNode.value] || [];
+                return [...currentLogs].reverse();
+            });
+
             const chartNameDisplay = computed(() => {
                 if (activeChartType.value === 'air_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Không Khí (°C)';
                 if (activeChartType.value === 'air_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Không Khí (%)';
@@ -254,7 +260,7 @@
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
                 nodeKeys.forEach(key => {
                     
-                    // Luồng 1: Đồng bộ biến phẳng gốc chuẩn xác
+                    // Luồng 1: Đồng bộ biến phẳng gốc chuẩn xác tức thì
                     database.ref('/' + key).on('value', (snapshot) => {
                         const val = snapshot.val();
                         if (val) {
@@ -268,7 +274,7 @@
                         }
                     });
 
-                    // Luồng 2: Luồng lịch sử nạp đảo ngược sẵn bằng JS thuần vô cùng mượt mà
+                    // Luồng 2: Đồng bộ Lịch sử (Đóng gói lồng trong /History giới hạn 10 dòng)
                     database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                         const historyData = snapshot.val();
                         if (historyData) {
@@ -284,16 +290,14 @@
                                     ec: logItem.soil_ec || 0
                                 });
                             });
-                            
-                            tempArray.reverse(); // Đảo ngược mảng
-                            logs[key] = tempArray; // Đẩy dữ liệu sạch vào mảng tĩnh
-                            
+                            logs[key] = tempArray; // Đẩy dữ liệu tĩnh vào mảng an toàn
                             if (currentTab.value === 'charts') { renderChart(); }
                         }
                     });
                 });
             };
 
+            // Hàm xuất Excel tách hàng cột ngăn nắp chuẩn bằng sep=,
             const exportCSVForCurrentNode = () => {
                 const targetLogs = logs[activeDbNode.value];
                 if (!targetLogs || targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
@@ -304,8 +308,7 @@
                 let csvContent = "\uFEFFsep=,\n"; 
                 csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
                 
-                const exportArray = [...targetLogs].reverse();
-                exportArray.forEach(item => {
+                targetLogs.forEach(item => {
                     const fullTimeField = formattedDate + " " + item.time;
                     csvContent += fullTimeField + "," + formatNumber(item.airT) + "," + formatNumber(item.airH) + "," + formatNumber(item.soilT) + "," + formatNumber(item.soilH) + "," + item.ec + "\n";
                 });
@@ -323,13 +326,14 @@
                 setTimeout(() => {
                     const ctx = document.getElementById('academicTempChart'); if (!ctx) return;
                     
-                    // Khóa safe check bảo vệ Chart.js
+                    // Khóa safe guard check bảo vệ đồ thị Chart.js
                     if (!logs.Node1 || logs.Node1.length === 0 || !logs.Node2 || logs.Node2.length === 0 || !logs.Node3 || logs.Node3.length === 0) {
                         return; 
                     }
                     
                     if (chartInstance) { chartInstance.destroy(); }
                     
+                    // Tạo bản sao đảo xuôi dữ liệu phục vụ vẽ đồ thị thời gian tiến tới
                     const n1History = [...logs.Node1].reverse();
                     const n2History = [...logs.Node2].reverse();
                     const n3History = [...logs.Node3].reverse();
