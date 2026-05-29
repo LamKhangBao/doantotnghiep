@@ -84,7 +84,7 @@
                 
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051<br>
+                    Phạm Thế Kiệt : 22138051
                 </div>
                 
                 <a href="#" @click="logout" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</a>
@@ -222,12 +222,10 @@
                 passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
             };
 
-            // THUẬT TOÁN ĐĂNG NHẬP MỚI: PHÂN TÁCH ĐỘC LẬP CHO BẢO KHANG & THẾ KIỆT
             const handleLogin = () => {
                 const username = loginForm.user.trim().toLowerCase();
                 const password = loginForm.pass.trim();
 
-                // Tài khoản Khang hoặc tài khoản Kiệt đều được chấp thuận
                 if ((username === 'baokhang' && password === '22138043') || 
                     (username === 'thekiet' && password === '22138051')) { 
                     isLoggedIn.value = true; 
@@ -307,7 +305,7 @@
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'air_hum') {
                         datasets = [
