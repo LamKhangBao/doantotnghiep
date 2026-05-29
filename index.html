@@ -95,7 +95,7 @@
             <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
                 <div>
                     <h3 class="fw-800 m-0 text-dark">{{ tabTitle }}</h3>
-                    <p class="text-muted small m-0 mt-1">Dữ liệu lưu trữ đám mây đồng bộ liên tục</p>
+                    <p class="text-muted small m-0 mt-1">Dữ liệu lưu trữ nội bộ phân nhánh đồng bộ</p>
                 </div>
                 <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;">
                     <span class="spinner-grow spinner-grow-sm" role="status"></span> HỆ THỐNG TRỰC TUYẾN
@@ -172,7 +172,7 @@
 
                     <div class="table-responsive">
                         <h5 class="fw-700 text-secondary mb-3">
-                            <i class="fa-solid fa-table-list me-2 text-primary"></i>Lịch sử trích xuất từ Firebase Cloud: {{ activeDbNode == 'Node1' ? 'Trạm 01' : activeDbNode == 'Node2' ? 'Trạm 02' : 'Trạm 03' }}
+                            <i class="fa-solid fa-table-list me-2 text-primary"></i>Lịch sử trích xuất lồng trong {{ activeDbNode == 'Node1' ? 'Node1/History' : activeDbNode == 'Node2' ? 'Node2/History' : 'Node3/History' }}
                         </h5>
                         
                         <table class="table table-hover align-middle border-0 m-0">
@@ -197,7 +197,7 @@
                                 </tr>
                                 <tr v-if="logs[activeDbNode].length === 0">
                                     <td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">
-                                        <i class="fa-solid fa-clock-rotate-left fa-spin me-2"></i>Đang truy vấn lịch sử vĩnh viễn từ Firebase Server...
+                                        <i class="fa-solid fa-clock-rotate-left fa-spin me-2"></i>Đang quét nhánh History nội bộ của từng Node...
                                     </td>
                                 </tr>
                             </tbody>
@@ -259,25 +259,30 @@
 
             const logout = () => { isLoggedIn.value = false; };
 
-            // HÀM KHỞI TẠO FIREBASE ĐỌC LỊCH SỬ TỪ SERVER LÊN WEB
             const initFirebase = () => {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
 
-                // 1. Đọc dữ liệu Realtime hiện tại của 3 Node
                 nodeKeys.forEach(key => {
+                    // 1. Đọc dữ liệu Realtime hiện tại nằm ở gốc của từng Node
                     database.ref('/' + key).on('value', (snapshot) => {
                         const val = snapshot.val();
-                        if (val) { nodes[key] = val; }
+                        if (val) {
+                            // Chỉ lấy dữ liệu biến đơn tại gốc, loại bỏ object History để tránh đè cấu trúc
+                            nodes[key].air_temperature = val.air_temperature || 0;
+                            nodes[key].air_humidity = val.air_humidity || 0;
+                            if (key !== 'Node3') {
+                                nodes[key].soil_temperature = val.soil_temperature || 0;
+                                nodes[key].soil_humidity = val.soil_humidity || 0;
+                                nodes[key].soil_ec = val.soil_ec || 0;
+                            }
+                        }
                     });
-                });
 
-                // 2. CƠ CHẾ ĐỒNG BỘ LỊCH SỬ VĨNH VIỄN: Quét mục /History trên Firebase đổ thẳng vào mảng logs trên Web
-                nodeKeys.forEach(key => {
-                    database.ref('/History/' + key).limitToLast(40).on('value', (snapshot) => {
+                    // 2. Đọc cấu trúc lịch sử lồng sâu bên trong: /[Tên_Node]/History
+                    database.ref('/' + key + '/History').limitToLast(40).on('value', (snapshot) => {
                         const historyData = snapshot.val();
                         if (historyData) {
                             const tempArray = [];
-                            // Duyệt qua chuỗi Object ngẫu nhiên của lệnh push để bóc tách dữ liệu sạch
                             Object.keys(historyData).forEach(id => {
                                 const logItem = historyData[id];
                                 tempArray.push({
@@ -289,7 +294,7 @@
                                     ec: logItem.soil_ec || 0
                                 });
                             });
-                            logs[key] = tempArray; // Đổ toàn bộ mảng dữ liệu quá khứ vào bảng công khai
+                            logs[key] = tempArray;
                             if (currentTab.value === 'charts') { renderChart(); }
                         }
                     });
@@ -321,9 +326,9 @@
             };
 
             watch(currentTab, (newTab) => {
-                if (newTab === 'realtime') tabTitle.value = 'Thông số trạm quan trắc thời gian thực';
-                if (newTab === 'database') tabTitle.value = 'Cơ sở dữ liệu lịch sử lưu trữ';
-                if (newTab === 'charts') { tabTitle.value = 'Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
+                if (newTab === 'realtime') tabTitle.value = ' Thông số trạm quan trắc thời gian thực';
+                if (newTab === 'database') tabTitle.value = ' Cơ sở dữ liệu lịch sử lưu trữ';
+                if (newTab === 'charts') { tabTitle.value = ' Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
             });
 
             return { isLoggedIn, currentTab, activeDbNode, tabTitle, loginForm, loginError, handleLogin, logout, nodes, logs };
