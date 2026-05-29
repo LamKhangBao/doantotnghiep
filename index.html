@@ -227,9 +227,12 @@
                 },
                 logs: { Node1: [], Node2: [], Node3: [] },
                 
-                // Thuộc tính chẩn đoán hệ thống
+                // Thuộc tính quản lý trạng thái kết nối thông minh chống báo động ảo
                 wifiAlerts: { Node1: false, Node2: false, Node3: false },
-                lastHeartbeat: { Node1: Date.now(), Node2: Date.now(), Node3: Date.now() },
+                // Bộ đếm số chu kỳ lỗi dữ liệu liên tiếp
+                missedPackets: { Node1: 0, Node2: 0, Node3: 0 },
+                // Biến cờ đánh dấu gói tin thực tế vừa cập nhật
+                packetReceivedFlag: { Node1: false, Node2: false, Node3: false },
                 allSheetData: null
             }
         },
@@ -241,11 +244,9 @@
                 if (this.activeChartType === 'soil_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Đất (%)';
                 return 'Đồ thị phân tích diễn tiến Chỉ số Dẫn Điện EC Đất (uS/cm)';
             },
-            // Kiểm tra trạng thái Wifi tổng thể cho nhãn Header
             isWifiLost() {
                 return this.wifiAlerts.Node1 || this.wifiAlerts.Node2 || this.wifiAlerts.Node3;
             },
-            // Kiểm tra trạng thái cảm biến dựa vào giá trị 0 hoặc NaN của trạm hiện tại
             currentSensorError() {
                 const node = this.nodes[this.activeDbNode];
                 if (!node) return false;
@@ -270,17 +271,27 @@
             }
         },
         mounted() {
-            // Heartbeat check luồng ngầm (7 giây vắng tin tức từ Firebase -> Đổi nút đỏ No Wifi)
+            // 🚀 THUẬT TOÁN ĐẾM GÓI TIN LỖI LIÊN TIẾP: Định kỳ cứ mỗi 5 giây quét kiểm tra xung mạch 1 lần
             setInterval(() => {
                 if (this.isLoggedIn) {
-                    const now = Date.now();
                     ['Node1', 'Node2', 'Node3'].forEach(k => {
-                        if (now - this.lastHeartbeat[k] > 7000) {
-                            this.wifiAlerts[k] = true;
+                        // Nếu trong chu kỳ 5 giây vừa qua hoàn toàn KHÔNG nhận được gói tin mới từ Firebase
+                        if (!this.packetReceivedFlag[k]) {
+                            this.missedPackets[k]++; // Tăng bộ đếm lỗi lên 1 đơn vị
+                            
+                            // Nếu số gói tin mất liên tiếp VƯỢT QUÁ 3 chu kỳ dữ liệu thì mới kích hoạt báo động
+                            if (this.missedPackets[k] > 3) {
+                                this.wifiAlerts[k] = true;
+                            }
+                        } else {
+                            // Nếu có gói tin xuất hiện, reset ngay bộ đếm lỗi về 0 và xóa cảnh báo
+                            this.missedPackets[k] = 0;
+                            this.wifiAlerts[k] = false;
+                            this.packetReceivedFlag[k] = false; // Reset cờ để chờ chu kỳ tiếp theo
                         }
                     });
                 }
-            }, 2000);
+            }, 5000); // Tần suất quét đồng bộ với chu kỳ gửi tin 5s của ESP32
         },
         methods: {
             togglePasswordVisibility() {
@@ -305,8 +316,9 @@
                         const historyData = snapshot.val();
                         if (historyData) {
                             
-                            // Có phản hồi từ Firebase -> Reset trạng thái Wifi
-                            this.lastHeartbeat[key] = Date.now();
+                            // Đánh dấu cờ hiệu: Đã nhận được gói dữ liệu thực tế thành công
+                            this.packetReceivedFlag[key] = true;
+                            this.missedPackets[key] = 0; // Xóa sạch bộ đếm lỗi tích lũy cũ
                             this.wifiAlerts[key] = false;
 
                             const dataValues = Object.values(historyData);
