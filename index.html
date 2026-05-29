@@ -83,7 +83,7 @@
                 
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051<br>
+                    Phạm Thế Kiệt : 22138051
                 </div>
                 
                 <div onclick="logout()" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</div>
@@ -166,7 +166,7 @@
                         <button id="bc-air_temp" onclick="switchChartType('air_temp')" class="node-selector-btn active">Nhiệt Độ Khí</button>
                         <button id="bc-air_hum" onclick="switchChartType('air_hum')" class="node-selector-btn">Độ Ẩm Khí</button>
                         <button id="bc-soil_temp" onclick="switchChartType('soil_temp')" class="node-selector-btn">Nhiệt Độ Đất</button>
-                        <button @click="switchChartType('soil_hum')" id="bc-soil_hum" class="node-selector-btn">Độ Ẩm Đất</button>
+                        <button id="bc-soil_hum" onclick="switchChartType('soil_hum')" class="node-selector-btn">Độ Ẩm Đất</button>
                         <button id="bc-soil_ec" onclick="switchChartType('soil_ec')" class="node-selector-btn">Chỉ số EC</button>
                     </div>
                     <h5 id="chart-title-text" class="fw-700 mb-4 text-dark"><i class="fa-solid fa-chart-line text-emerald-600 me-2"></i>Đồ thị phân tích diễn tiến Nhiệt Độ Không Khí (°C)</h5>
@@ -249,6 +249,7 @@
         renderTableData();
     }
 
+    // Chuyển đổi nút Đồ thị mục 3
     function switchChartType(chartType) {
         activeChartType = chartType;
         document.querySelectorAll('#content-charts .node-selector-btn').forEach(b => b.classList.remove('active'));
@@ -265,21 +266,17 @@
         renderChartGraphics();
     }
 
-    // 🚀 ĐÃ NÂNG CẤP HOÀN CHỈNH THUẬT TOÁN ĐỒNG BỘ: MỞ TRANG LÀ SỐ NHẢY NGAY LẬP TỨC
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
-            // Dùng sự kiện 'value' quét kho lịch sử: Bốc dòng cuối cùng có sẵn điền thẳng lên Mục 1 Realtime
             database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
-                    // Trích xuất phần tử object cuối cùng nằm trong chuỗi Push ID vĩnh viễn
                     const lastId = Object.keys(historyData)[0];
                     const val = historyData[lastId];
                     
                     if (val) {
-                        // Ép cứng lấy đúng 1 chữ số sau dấu thập phân (.toFixed(1)) cho cả 3 Node
                         document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
                         document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
                         if (key !== 'Node3') {
@@ -291,11 +288,10 @@
                 }
             });
 
-            // Đồng bộ luồng bảng lưu nhật ký 10 dòng gần nhất
             database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
-                    logs[key] = []; // Làm rỗng mảng cũ để nạp mới, tránh hiện tượng đóng băng dữ liệu cũ
+                    logs[key] = []; 
                     Object.keys(historyData).forEach(id => {
                         const logItem = historyData[id];
                         logs[key].push({
@@ -363,13 +359,13 @@
             datasets = [
                 { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                 { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                { label: 'Trạm 3 (Target Ngoài)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
             ];
         } else if (activeChartType === 'air_hum') {
             datasets = [
                 { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                 { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                { label: 'Trạm 3 (Target Ngoài)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
             ];
         } else if (activeChartType === 'soil_temp') {
             datasets = [
@@ -391,6 +387,7 @@
         globalChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
     }
 
+    // 🔥 THUẬT TOÁN ĐÃ ĐƯỢC CHỈNH SỬA: ÉP EXCEL TỰ ĐỘNG CHIA CỘT RÕ RÀNG BẰNG LỆNH "sep=,"
     function exportCSVForCurrentNode() {
         const targetLogs = logs[activeDbNode];
         if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
@@ -401,10 +398,12 @@
         const rawDate = filterDateVal.split('-');
         const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
 
-        let csvContent = "\uFEFFMoc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
+        // Thêm \uFEFF để giữ font tiếng Việt và chèn "sep=,\n" lên đầu để ra lệnh cho Excel tự động phân chia hàng/cột ngay ngắn
+        let csvContent = "\uFEFFsep=,\n"; 
+        csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
         
         targetLogs.forEach(item => {
-            const fullTimeField = formattedDate + " " + filterTimeVal;
+            const fullTimeField = formattedDate + " " + item.time;
             csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
         });
         
