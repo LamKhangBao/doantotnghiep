@@ -120,7 +120,7 @@
                             <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">Trạm 03 (Ngoài nhà màng)</button>
                         </div>
                         <button @click="exportCSVForCurrentNode" class="btn btn-outline-success fw-bold d-flex align-items-center gap-2" style="border-radius:10px;">
-                            <i class="fa-solid fa-file-excel"></i> Xuất File Nhật Ký (.CSV) của {{ activeDbNode }}
+                            <i class="fa-solid fa-file-excel"></i> Xuất File Nhật Ký (.CSV)
                         </button>
                     </div>
 
@@ -181,7 +181,7 @@
             const currentTab = ref('realtime');
             const activeDbNode = ref('Node1'); 
             const activeChartType = ref('air_temp'); 
-            const tabTitle = ref('Mục 1: Thông số trạm quan trắc thời gian thực');
+            const tabTitle = ref('Mục 1: Thông số trạm quan thực thời gian thực');
             const loginForm = reactive({ user: '', pass: '' });
             const loginError = ref(false);
             const passwordFieldType = ref('password'); 
@@ -215,21 +215,20 @@
                 csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
                 
                 targetLogs.forEach(item => {
-                    csvContent += `${item.time},${item.airT},${item.airH},${item.soilT},${item.soilH},${item.ec}\n`;
+                    csvContent += item.time + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
                 });
                 
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a");
                 const dateStr = new Date().toLocaleDateString().replace(/\//g, "-");
                 link.href = URL.createObjectURL(blob);
-                link.setAttribute("download", `NhatKy_DuLieu_${activeDbNode.value}_Ngay_${dateStr}.csv`);
+                link.setAttribute("download", "NhatKy_DuLieu_" + activeDbNode.value + "_Ngay_" + dateStr + ".csv");
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
             };
 
             const handleLogin = () => {
-                // Sửa logic so khớp chuỗi chuẩn xác độc lập
                 if (loginForm.user.trim() === 'doantotnghiep' && loginForm.pass === '12345678') { 
                     isLoggedIn.value = true; 
                     initFirebase(); 
@@ -256,7 +255,6 @@
                         }
                     });
 
-                    // Làm sạch mảng trước khi nạp để tránh lặp dữ liệu kẹt
                     logs[key] = [];
                     database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
                         const logItem = snapshot.val();
@@ -314,7 +312,7 @@
             };
 
             watch(currentTab, (newTab) => {
-                if (newTab === 'realtime') tabTitle.value = 'Mục 1: Thông số trạm quan trắc thời gian thực';
+                if (newTab === 'realtime') tabTitle.value = 'Mục 1: Thông số trạm quan thực thời gian thực';
                 if (newTab === 'database') tabTitle.value = 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ';
                 if (newTab === 'charts') { tabTitle.value = 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
             });
