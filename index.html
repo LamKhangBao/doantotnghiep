@@ -19,7 +19,7 @@
         .password-wrapper { position: relative; }
         .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; z-index: 10; }
 
-        /* Main App Board */
+        /* Main Dashboard */
         #dashboard-page { display: none; }
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
         .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
@@ -143,7 +143,9 @@
                             <input type="date" id="filterDate" class="filter-input">
                             
                             <span class="small fw-bold text-secondary ms-1"><i class="fa-regular fa-clock me-1"></i> Giờ xuất:</span>
-                            <input type="time" id="filterTime" class="filter-input" step="1"> <button onclick="exportCSVForCurrentNode()" class="btn btn-success fw-bold d-flex align-items-center gap-2" style="border-radius:12px; background: var(--primary);">
+                            <input type="time" id="filterTime" class="filter-input" step="1">
+                            
+                            <button onclick="exportCSVForCurrentNode()" class="btn btn-success fw-bold d-flex align-items-center gap-2" style="border-radius:12px; background: var(--primary);">
                                 <i class="fa-solid fa-file-excel"></i> Xuất Nhật Ký (.CSV)
                             </button>
                         </div>
@@ -164,7 +166,7 @@
                         <button id="bc-air_temp" onclick="switchChartType('air_temp')" class="node-selector-btn active">Nhiệt Độ Khí</button>
                         <button id="bc-air_hum" onclick="switchChartType('air_hum')" class="node-selector-btn">Độ Ẩm Khí</button>
                         <button id="bc-soil_temp" onclick="switchChartType('soil_temp')" class="node-selector-btn">Nhiệt Độ Đất</button>
-                        <button id="bc-soil_hum" onclick="switchChartType('soil_hum')" class="node-selector-btn">Độ Ẩm Đất</button>
+                        <button @click="switchChartType('soil_hum')" id="bc-soil_hum" class="node-selector-btn">Độ Ẩm Đất</button>
                         <button id="bc-soil_ec" onclick="switchChartType('soil_ec')" class="node-selector-btn">Chỉ số EC</button>
                     </div>
                     <h5 id="chart-title-text" class="fw-700 mb-4 text-dark"><i class="fa-solid fa-chart-line text-emerald-600 me-2"></i>Đồ thị phân tích diễn tiến Nhiệt Độ Không Khí (°C)</h5>
@@ -187,7 +189,6 @@
     let activeChartType = 'air_temp';
     let globalChartInstance = null;
     
-    // Đặt mặc định giờ xuất file là thời gian hiện tại
     document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
     const now = new Date();
     document.getElementById('filterTime').value = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0') + ":" + String(now.getSeconds()).padStart(2, '0');
@@ -264,39 +265,48 @@
         renderChartGraphics();
     }
 
-    // 1. SỬA TRIỆT ĐỂ LỖI HIỂN THỊ REALTIME BẰNG CÁCH QUÉT NHÁNH LỊCH SỬ ĐỂ BỐC PHẦN TỬ CUỐI CÙNG LÊN MÀN HÌNH CHÍNH
+    // 🚀 ĐÃ NÂNG CẤP HOÀN CHỈNH THUẬT TOÁN ĐỒNG BỘ: MỞ TRANG LÀ SỐ NHẢY NGAY LẬP TỨC
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
-            // Lắng nghe luồng History: Cứ có dòng mới là ép cập nhật lên khung Realtime Mục 1
-            database.ref('/' + key + '/History').limitToLast(1).on('child_added', (snapshot) => {
-                const val = snapshot.val();
-                if (val) {
-                    // 3. Ép kiểu .toFixed(1) cho cả Node 2 để hiển thị sạch đẹp 1 số sau dấu phẩy
-                    document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature).toFixed(1) + ' °C';
-                    document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity).toFixed(1) + ' %';
-                    if (key !== 'Node3') {
-                        document.getElementById(key.toLowerCase() + '-st').innerText = Number(val.soil_temperature).toFixed(1) + ' °C';
-                        document.getElementById(key.toLowerCase() + '-sh').innerText = Number(val.soil_humidity).toFixed(1) + ' %';
-                        document.getElementById(key.toLowerCase() + '-ec').innerText = (val.soil_ec || 0) + ' uS/cm';
+            // Dùng sự kiện 'value' quét kho lịch sử: Bốc dòng cuối cùng có sẵn điền thẳng lên Mục 1 Realtime
+            database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
+                const historyData = snapshot.val();
+                if (historyData) {
+                    // Trích xuất phần tử object cuối cùng nằm trong chuỗi Push ID vĩnh viễn
+                    const lastId = Object.keys(historyData)[0];
+                    const val = historyData[lastId];
+                    
+                    if (val) {
+                        // Ép cứng lấy đúng 1 chữ số sau dấu thập phân (.toFixed(1)) cho cả 3 Node
+                        document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
+                        document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
+                        if (key !== 'Node3') {
+                            document.getElementById(key.toLowerCase() + '-st').innerText = Number(val.soil_temperature || 0).toFixed(1) + ' °C';
+                            document.getElementById(key.toLowerCase() + '-sh').innerText = Number(val.soil_humidity || 0).toFixed(1) + ' %';
+                            document.getElementById(key.toLowerCase() + '-ec').innerText = (val.soil_ec || 0) + ' uS/cm';
+                        }
                     }
                 }
             });
 
-            // Đồng bộ luồng mảng lịch sử vĩnh viễn 10 dòng
-            database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
-                const logItem = snapshot.val();
-                if (logItem) {
-                    logs[key].push({
-                        time: String(logItem.time_log || "").replace(/"/g, ""),
-                        airT: Number(logItem.air_temperature).toFixed(1), // Đồng bộ lấy 1 số thập phân
-                        airH: Number(logItem.air_humidity).toFixed(1),   // Đồng bộ lấy 1 số thập phân
-                        soilT: Number(logItem.soil_temperature).toFixed(1),
-                        soilH: Number(logItem.soil_humidity).toFixed(1),
-                        ec: Number(logItem.soil_ec) || 0
+            // Đồng bộ luồng bảng lưu nhật ký 10 dòng gần nhất
+            database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
+                const historyData = snapshot.val();
+                if (historyData) {
+                    logs[key] = []; // Làm rỗng mảng cũ để nạp mới, tránh hiện tượng đóng băng dữ liệu cũ
+                    Object.keys(historyData).forEach(id => {
+                        const logItem = historyData[id];
+                        logs[key].push({
+                            time: String(logItem.time_log || "").replace(/"/g, ""),
+                            airT: Number(logItem.air_temperature || 0).toFixed(1), 
+                            airH: Number(logItem.air_humidity || 0).toFixed(1),   
+                            soilT: Number(logItem.soil_temperature || 0).toFixed(1),
+                            soilH: Number(logItem.soil_humidity || 0).toFixed(1),
+                            ec: Number(logItem.soil_ec) || 0
+                        });
                     });
-                    if (logs[key].length > 10) logs[key].shift();
                     
                     const currentActiveTab = document.querySelector('.tab-content-view.active').id;
                     if (currentActiveTab === 'content-database') renderTableData();
@@ -353,13 +363,13 @@
             datasets = [
                 { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                 { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                { label: 'Trạm 3 (Target Ngoài)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
             ];
         } else if (activeChartType === 'air_hum') {
             datasets = [
                 { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                 { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                { label: 'Trạm 3 (Target Ngoài)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
             ];
         } else if (activeChartType === 'soil_temp') {
             datasets = [
@@ -381,13 +391,12 @@
         globalChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
     }
 
-    // 2. NÂNG CẤP THUẬT TOÁN XUẤT FILE PHỐI HỢP CẢ LỌC NGÀY VÀ GIỜ RA FILE ĐÚNG QUY CHUẨN ẢNH 3
     function exportCSVForCurrentNode() {
         const targetLogs = logs[activeDbNode];
         if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
         
         const filterDateVal = document.getElementById('filterDate').value;
-        const filterTimeVal = document.getElementById('filterTime').value; // Lấy mốc giờ lọc cụ thể từ ô input
+        const filterTimeVal = document.getElementById('filterTime').value;
         
         const rawDate = filterDateVal.split('-');
         const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
@@ -395,7 +404,6 @@
         let csvContent = "\uFEFFMoc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
         
         targetLogs.forEach(item => {
-            // Sử dụng giờ do người dùng cấu hình lọc kết hợp với ngày để in ra tệp chuẩn 100% hình 3
             const fullTimeField = formattedDate + " " + filterTimeVal;
             csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
         });
