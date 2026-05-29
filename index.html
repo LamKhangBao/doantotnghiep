@@ -22,7 +22,7 @@
 
         /* Sidebar & Layout */
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
-        .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
+        .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 20px 15px; }
         .nav-link { color: #a7f3d0; padding: 14px 24px; display: flex; align-items: center; gap: 15px; text-decoration: none; transition: 0.3s; font-weight: 500; margin: 4px 16px; border-radius: 12px; }
         .nav-link:hover, .nav-link.active { background: rgba(255, 255, 255, 0.15); color: white; font-weight: 600; }
 
@@ -72,13 +72,13 @@
     <div v-else>
         <nav id="sidebar">
             <div class="brand-zone text-center">
-                <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-2" style="max-height: 50px; filter: brightness(0) invert(1);">
-                <h5 class="fw-800 mb-0 text-white" style="letter-spacing: 0.5px;">Greenhouse</h5>
+                <img src="https://stec.hcmuaf.edu.vn/images/logo.png" alt="Logo Khoa Cơ khí Công nghệ" class="img-fluid mb-2" style="max-height: 75px; border-radius: 50%; background: white; padding: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                <h5 class="fw-800 mb-0 text-white" style="letter-spacing: 0.5px; font-size: 16px;">Greenhouse</h5>
             </div>
             <div class="mt-4">
-                <a href="#" @click="currentTab = 'realtime'" class="nav-link" :class="{active: currentTab == 'realtime'}"><i class="fa-solid fa-chart-pie"></i> Mục 1: Thông số Realtime</a>
-                <a href="#" @click="currentTab = 'database'" class="nav-link" :class="{active: currentTab == 'database'}"><i class="fa-solid fa-table"></i> Mục 2: Cơ sở dữ liệu bảng</a>
-                <a href="#" @click="currentTab = 'charts'" class="nav-link" :class="{active: currentTab == 'charts'}"><i class="fa-solid fa-chart-line"></i> Mục 3: Biểu đồ xu hướng</a>
+                <a href="#" @click="currentTab = 'realtime'" class="nav-link" :class="{active: currentTab == 'realtime'}"><i class="fa-solid fa-chart-pie"></i> Thông số Realtime</a>
+                <a href="#" @click="currentTab = 'database'" class="nav-link" :class="{active: currentTab == 'database'}"><i class="fa-solid fa-table"></i> Cơ sở dữ liệu bảng</a>
+                <a href="#" @click="currentTab = 'charts'" class="nav-link" :class="{active: currentTab == 'charts'}"><i class="fa-solid fa-chart-line"></i> Biểu đồ xu hướng</a>
                 <hr class="mx-4 opacity-10">
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
@@ -197,7 +197,8 @@
                 currentTab: 'realtime',
                 activeDbNode: 'Node1',
                 activeChartType: 'air_temp',
-                tabTitle: 'Mục 1: Thông số trạm quan trắc thời gian thực',
+                // ĐÃ CẬP NHẬT: Xóa chữ Mục 1, Mục 2 ở tiêu đề chính
+                tabTitle: 'Thông số trạm quan trắc thời gian thực',
                 loginForm: { user: '', pass: '' },
                 loginError: false,
                 passwordFieldType: 'password',
@@ -222,9 +223,10 @@
         },
         watch: {
             currentTab(newTab) {
-                if (newTab === 'realtime') this.tabTitle = 'Mục 1: Thông số trạm quan trắc thời gian thực';
+                // ĐÃ CẬP NHẬT: Xóa chữ Mục 1, Mục 2, Mục 3 ở luồng gán tiêu đề động
+                if (newTab === 'realtime') this.tabTitle = 'Thông số trạm quan trắc thời gian thực';
                 if (newTab === 'database' || newTab === 'charts') { 
-                    this.tabTitle = newTab === 'database' ? 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ' : 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; 
+                    this.tabTitle = newTab === 'database' ? 'Cơ sở dữ liệu lịch sử lưu trữ' : 'Đồ thị phân tích diễn tiến môi trường'; 
                     this.fetchAllGoogleSheets(); 
                 }
             },
@@ -282,7 +284,6 @@
                 return match ? (parseFloat(match[0]) || 0) : 0;
             },
 
-            // 🚀 BẢN SỬA LỖI LỚN: TÍNH TOÁN MAP HỆ TIẾNG VIỆT CÓ DẤU TRÙNG KHỚP 100% VỚI ẢNH CỦA HAI BẠN
             fetchAllGoogleSheets() {
                 const keys = ['Node1', 'Node2', 'Node3'];
                 const promises = keys.map(key => {
@@ -292,7 +293,6 @@
                             const lines = csvText.split("\n");
                             if (lines.length < 2) return [];
 
-                            // Đổi về chữ thường chuẩn hóa chữ có dấu tiếng Việt, khử ngoặc đơn
                             const headers = this.splitCSVLine(lines[0]).map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                             
                             const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
