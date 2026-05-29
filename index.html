@@ -123,7 +123,7 @@
                         <div class="d-flex gap-2">
                             <button @click="activeDbNode = 'Node1'" class="node-selector-btn" :class="{active: activeDbNode == 'Node1'}">Trạm 01 (Trong nhà)</button>
                             <button @click="activeDbNode = 'Node2'" class="node-selector-btn" :class="{active: activeDbNode == 'Node2'}">Trạm 02 (Trong nhà)</button>
-                            <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">Trạm 03 (Ngoài nhà màng)</button>
+                            <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">Trạm 03 (Outer Ngoài)</button>
                         </div>
                         
                         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -184,7 +184,6 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 🚀 ĐÃ CẬP NHẬT: 3 ĐƯỜNG LINK TRÍCH XUẤT CSV ĐỘC LẬP CHÍNH THỨC CỦA HAI BẠN (Sheet2, Sheet3, Sheet4)
     const sheetUrls = {
         Node1: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSfRDUArGqV8FrZxLD-SYJc7E7ctaxnQpx2YD-64WwnnDRy5TSqPRu8090I0QEknoUQcm1l4-lbPFeg/pub?gid=1379159128&single=true&output=csv", 
         Node2: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSfRDUArGqV8FrZxLD-SYJc7E7ctaxnQpx2YD-64WwnnDRy5TSqPRu8090I0QEknoUQcm1l4-lbPFeg/pub?gid=552691129&single=true&output=csv", 
@@ -251,7 +250,6 @@
             initFirebase() {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
                 nodeKeys.forEach(key => {
-                    // Đồng bộ luồng mốc tin mới nhất trong History để Mục 1 Realtime luôn cập nhật số đo thực
                     database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                         const historyData = snapshot.val();
                         if (historyData) {
@@ -272,7 +270,14 @@
                 this.fetchAllGoogleSheets();
             },
 
-            // 🚀 THUẬT TOÁN QU SCAN SONG SONG 3 ĐƯỜNG LINK SHEET ĐỘC LẬP TỰ ĐỘNG CHUẨN HÓA CỘT BIẾN
+            // 🚀 BẢN THAY THẾ CHÍNH XÁC: TỰ ĐỘNG KHỚP CẢ DẤU PHẨY (,) LẪN DẤU CHẤM PHẨY (;) CỦA TỪNG KHU VỰC SHEET
+            splitCSVLine(line) {
+                if (line.includes(";")) {
+                    return line.split(";");
+                }
+                return line.split(",");
+            },
+
             fetchAllGoogleSheets() {
                 const keys = ['Node1', 'Node2', 'Node3'];
                 const promises = keys.map(key => {
@@ -282,8 +287,8 @@
                             const lines = csvText.split("\n");
                             if (lines.length < 2) return [];
 
-                            // Chuẩn hóa dòng Header chữ thường + xóa khoảng trắng ngầm của Excel
-                            const headers = lines[0].split(",").map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
+                            // Tự động phân tách tiêu đề Header dựa trên cả hai dấu phân cách
+                            const headers = this.splitCSVLine(lines[0]).map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                             
                             const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
                             const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("temperature") || h.includes("khi"));
@@ -295,16 +300,23 @@
                             const currentLogs = [];
                             for (let i = 1; i < lines.length; i++) {
                                 if (!lines[i].trim()) continue;
-                                const cols = lines[i].split(",");
+                                const cols = this.splitCSVLine(lines[i]);
 
                                 const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
+                                
+                                // Chuẩn hóa chuỗi số nếu Google Sheet lưu dạng dấu phẩy kiểu VN (ví dụ: "32,5" -> "32.5")
+                                const cleanNum = (val) => {
+                                    if (!val) return 0;
+                                    return Number(String(val).replace(/"/g, "").replace(",", ".").trim()) || 0;
+                                };
+
                                 currentLogs.push({
                                     time: timeStr,
-                                    airT: idxAirT !== -1 ? (Number(cols[idxAirT]) || 0) : 0,
-                                    airH: idxAirH !== -1 ? (Number(cols[idxAirH]) || 0) : 0,
-                                    soilT: idxSoilT !== -1 ? (Number(cols[idxSoilT]) || 0) : 0,
-                                    soilH: idxSoilH !== -1 ? (Number(cols[idxSoilH]) || 0) : 0,
-                                    ec: idxEc !== -1 ? (Number(cols[idxEc]) || 0) : 0
+                                    airT: idxAirT !== -1 ? cleanNum(cols[idxAirT]) : 0,
+                                    airH: idxAirH !== -1 ? cleanNum(cols[idxAirH]) : 0,
+                                    soilT: idxSoilT !== -1 ? cleanNum(cols[idxSoilT]) : 0,
+                                    soilH: idxSoilH !== -1 ? cleanNum(cols[idxSoilH]) : 0,
+                                    ec: idxEc !== -1 ? cleanNum(cols[idxEc]) : 0
                                 });
                             }
                             return { key, data: currentLogs };
@@ -314,7 +326,6 @@
                 Promise.all(promises).then(results => {
                     results.forEach(res => {
                         if (res) {
-                            // Lấy 10 mốc mới nhất đảo ngược nạp lên bảng Mục 2
                             this.logs[res.key] = res.data.slice(-10).reverse();
                         }
                     });
@@ -329,7 +340,6 @@
                 }).catch(err => console.error("Lỗi đồng bộ mảng: ", err));
             },
 
-            // TRÍCH XUẤT NHẬT KÝ ĐỘC LẬP TỪ TỪNG SHEET RIÊNG BIỆT THEO NGÀY
             exportCSVFromGoogleSheet() {
                 const selectedNode = this.activeDbNode;
                 const chosenDate = this.filterDate; 
@@ -342,7 +352,7 @@
                         const lines = csvText.split("\n");
                         if (lines.length < 2) return;
 
-                        const headers = lines[0].split(",").map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
+                        const headers = this.splitCSVLine(lines[0]).map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                         const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
                         const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("air_temperature"));
                         const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("air_humidity"));
@@ -356,15 +366,21 @@
 
                         for (let i = 1; i < lines.length; i++) {
                             if (!lines[i].trim()) continue;
-                            const cols = lines[i].split(",");
+                            const cols = this.splitCSVLine(lines[i]);
                             const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
 
+                            const cleanNum = (val) => {
+                                if (!val) return "0.0";
+                                const n = Number(String(val).replace(/"/g, "").replace(",", ".").trim()) || 0;
+                                return n.toFixed(1);
+                            };
+
                             if (timeStr.includes(formattedDateCheck)) {
-                                const airT = idxAirT !== -1 ? Number(cols[idxAirT]).toFixed(1) : "0.0";
-                                const airH = idxAirH !== -1 ? Number(cols[idxAirH]).toFixed(1) : "0.0";
-                                const soilT = idxSoilT !== -1 ? Number(cols[idxSoilT]).toFixed(1) : "0.0";
-                                const soilH = idxSoilH !== -1 ? Number(cols[idxSoilH]).toFixed(1) : "0.0";
-                                const ec = idxEc !== -1 ? (Number(cols[idxEc]) || 0) : 0;
+                                const airT = idxAirT !== -1 ? cleanNum(cols[idxAirT]) : "0.0";
+                                const airH = idxAirH !== -1 ? cleanNum(cols[idxAirH]) : "0.0";
+                                const soilT = idxSoilT !== -1 ? cleanNum(cols[idxSoilT]) : "0.0";
+                                const soilH = idxSoilH !== -1 ? cleanNum(cols[idxSoilH]) : "0.0";
+                                const ec = idxEc !== -1 ? (Number(String(cols[idxEc]).replace(",", ".")) || 0) : 0;
 
                                 csvContent += timeStr + "," + airT + "," + airH + "," + soilT + "," + soilH + "," + ec + "\n";
                                 countRows++;
@@ -415,450 +431,7 @@
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: n3Data.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
-                        ];
-                    } else if (this.activeChartType === 'soil_temp') {
-                        datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.soilT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.soilT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
-                        ];
-                    } else if (this.activeChartType === 'soil_hum') {
-                        datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.soilH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.soilH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
-                        ];
-                    } else if (this.activeChartType === 'soil_ec') {
-                        datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.ec), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.ec), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
-                        ];
-                    }
-                    window.chartInstanceGlobal = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
-                }, 100);
-            }
-        }
-    });
-    app.mount('#app');
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Smart Greenhouse AI | Đồ Án Tốt Nghiệp Nhóm 9</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; margin: 0; }
-
-        /* Login Design Nông Lâm */
-        #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
-        .login-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 100%; max-width: 420px; }
-        
-        .password-wrapper { position: relative; }
-        .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; z-index: 10; }
-
-        /* Sidebar & Layout */
-        #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
-        .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
-        .nav-link { color: #a7f3d0; padding: 14px 24px; display: flex; align-items: center; gap: 15px; text-decoration: none; transition: 0.3s; font-weight: 500; margin: 4px 16px; border-radius: 12px; }
-        .nav-link:hover, .nav-link.active { background: rgba(255, 255, 255, 0.15); color: white; font-weight: 600; }
-
-        #main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; }
-        .node-card { background: white; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(6,78,59,0.02); margin-bottom: 30px; border: 1px solid #e2e8f0; }
-        .node-header { background: #f8fafc; padding: 16px 24px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
-        .sensor-row { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .sensor-val { font-size: 20px; font-weight: 700; }
-
-        .table-container { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; }
-        .node-selector-btn { padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; background: white; color: #475569; transition: 0.2s; }
-        .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(5,150,105,0.2); }
-
-        .filter-input { padding: 8px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px; color: #475569; font-weight: 600; background: #f8fafc; outline: none; }
-        .filter-input:focus { border-color: var(--primary); background: white; }
-
-        canvas { width: 100% !important; height: 380px !important; }
-        [v-cloak] { display: none; }
-    </style>
-</head>
-<body>
-
-<div id="app" v-cloak>
-    
-    <div v-if="!isLoggedIn" id="login-page">
-        <div class="login-card text-center">
-            <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-4" style="max-height: 100px;">
-            <h5 class="fw-800 mb-1 text-dark">TRƯỜNG ĐẠI HỌC NÔNG LÂM</h5>
-            <p class="text-muted small mb-4">Hệ Thống Giám Sát Điều Phối Nhà Màng | Nhóm 9</p>
-            
-            <div class="mb-3 text-start">
-                <label class="form-label small fw-600 text-secondary">Tài khoản quản trị</label>
-                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản đăng nhập...">
-            </div>
-            <div class="mb-4 text-start">
-                <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
-                <div class="password-wrapper">
-                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu..." @keyup.enter="handleLogin">
-                    <i class="fa-solid password-toggle" :class="passwordFieldType === 'password' ? 'fa-eye-slash' : 'fa-eye'" @click="togglePasswordVisibility"></i>
-                </div>
-            </div>
-            <button @click="handleLogin" class="btn btn-success w-100 py-2.5 fw-bold shadow-sm" style="border-radius:12px; background: var(--primary);">ĐĂNG NHẬP HỆ THỐNG</button>
-            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai tài khoản hoặc mật khẩu bạng ơi!</p>
-        </div>
-    </div>
-
-    <div v-else>
-        <nav id="sidebar">
-            <div class="brand-zone text-center">
-                <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-2" style="max-height: 50px; filter: brightness(0) invert(1);">
-                <h5 class="fw-800 mb-0 text-white" style="letter-spacing: 0.5px;">Greenhouse</h5>
-            </div>
-            <div class="mt-4">
-                <a href="#" @click="currentTab = 'realtime'" class="nav-link" :class="{active: currentTab == 'realtime'}"><i class="fa-solid fa-chart-pie"></i> Mục 1: Thông số Realtime</a>
-                <a href="#" @click="currentTab = 'database'" class="nav-link" :class="{active: currentTab == 'database'}"><i class="fa-solid fa-table"></i> Mục 2: Cơ sở dữ liệu bảng</a>
-                <a href="#" @click="currentTab = 'charts'" class="nav-link" :class="{active: currentTab == 'charts'}"><i class="fa-solid fa-chart-line"></i> Mục 3: Biểu đồ xu hướng</a>
-                <hr class="mx-4 opacity-10">
-                <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
-                    Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051<br>
-                </div>
-                <a href="#" @click="logout" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</a>
-            </div>
-        </nav>
-
-        <main id="main-content">
-            <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
-                <div><h3 class="fw-800 m-0 text-dark">{{ tabTitle }}</h3><p class="text-muted small m-0 mt-1">Hệ thống phân tầng tích hợp đám mây Google Sheet & Firebase</p></div>
-                <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;"><span class="spinner-grow spinner-grow-sm"></span> LIVE CONNECTED</div>
-            </header>
-
-            <div v-if="currentTab == 'realtime'">
-                <div class="row">
-                    <div v-for="i in [1, 2]" :key="'rt-'+i" class="col-md-4">
-                        <div class="node-card">
-                            <div class="node-header text-dark d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-building-shield text-emerald-600 me-2"></i>TRẠM TRONG NHÀ MÀNG 0{{i}}</span><span class="badge bg-success-subtle text-success">Inside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-primary">{{ formatNumber(nodes['Node'+i].air_temperature) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-success">{{ formatNumber(nodes['Node'+i].air_humidity) }} %</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span class="sensor-val text-warning">{{ formatNumber(nodes['Node'+i].soil_temperature) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm đất</span><span class="sensor-val text-info">{{ formatNumber(nodes['Node'+i].soil_humidity) }} %</span></div>
-                            <div class="sensor-row"><span>Độ dẫn điện EC đất</span><span class="sensor-val text-dark">{{ nodes['Node'+i].soil_ec }} uS/cm</span></div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="node-card" style="border-top: 4px solid var(--warning);">
-                            <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span><span class="badge bg-warning-subtle text-warning">Outside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_temperature) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_humidity) }} %</span></div>
-                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài (Mát hơn và khô hơn bên trong).</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div v-if="currentTab == 'database'">
-                <div class="table-container">
-                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 flex-wrap gap-3">
-                        <div class="d-flex gap-2">
-                            <button @click="activeDbNode = 'Node1'" class="node-selector-btn" :class="{active: activeDbNode == 'Node1'}">Trạm 01 (Trong nhà)</button>
-                            <button @click="activeDbNode = 'Node2'" class="node-selector-btn" :class="{active: activeDbNode == 'Node2'}">Trạm 02 (Trong nhà)</button>
-                            <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">Trạm 03 (Ngoài nhà màng)</button>
-                        </div>
-                        
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="small fw-bold text-secondary"><i class="fa-regular fa-calendar-days me-1"></i> Lọc ngày báo cáo:</span>
-                            <input type="date" v-model="filterDate" class="filter-input">
-                            <button @click="exportCSVFromGoogleSheet" class="btn btn-success fw-bold d-flex align-items-center gap-2" style="border-radius:12px; background: var(--primary);">
-                                <i class="fa-solid fa-file-excel"></i> Xuất Trích Xuất Sheet (.CSV)
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <h5 class="fw-700 text-secondary mb-3"><i class="fa-solid fa-table-list text-emerald-600 me-2"></i>Bảng ghi nhận 10 mốc từ Google Sheet mới nhất</h5>
-                        <table class="table table-hover align-middle m-0">
-                            <thead>
-                                <tr><th>Mốc thời gian</th><th>Nhiệt độ khí</th><th>Độ ẩm khí</th><th v-if="activeDbNode != 'Node3'">Nhiệt độ đất</th><th v-if="activeDbNode != 'Node3'">Độ ẩm đất</th><th v-if="activeDbNode != 'Node3'">Chỉ số EC</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(log, index) in logs[activeDbNode]" :key="'log-'+index">
-                                    <td class="fw-600 text-emerald-700"><i class="fa-regular fa-clock me-1 text-muted"></i>{{ log.time }}</td>
-                                    <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ formatNumber(log.airT) }} °C</span></td>
-                                    <td><span class="badge bg-success-subtle text-success fw-bold">{{ formatNumber(log.airH) }} %</span></td>
-                                    <td v-if="activeDbNode != 'Node3'">{{ formatNumber(log.soilT) }} °C</td>
-                                    <td v-if="activeDbNode != 'Node3'">{{ formatNumber(log.soilH) }} %</td>
-                                    <td v-if="activeDbNode != 'Node3'" class="fw-bold text-dark">{{ log.ec }} uS/cm</td>
-                                </tr>
-                                <tr v-if="logs[activeDbNode].length === 0"><td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">Đang kết nối luồng dữ liệu đám mây Google Sheet...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div v-if="currentTab == 'charts'">
-                <div class="table-container">
-                    <div class="d-flex gap-2 mb-4 border-bottom pb-3 flex-wrap">
-                        <button @click="activeChartType = 'air_temp'" class="node-selector-btn" :class="{active: activeChartType === 'air_temp'}">Nhiệt Độ Khí</button>
-                        <button @click="activeChartType = 'air_hum'" class="node-selector-btn" :class="{active: activeChartType === 'air_hum'}">Độ Ẩm Khí</button>
-                        <button @click="activeChartType = 'soil_temp'" class="node-selector-btn" :class="{active: activeChartType === 'soil_temp'}">Nhiệt Độ Đất</button>
-                        <button @click="activeChartType = 'soil_hum'" class="node-selector-btn" :class="{active: activeChartType === 'soil_hum'}">Độ Ẩm Đất</button>
-                        <button @click="activeChartType = 'soil_ec'" class="node-selector-btn" :class="{active: activeChartType === 'soil_ec'}">Chỉ số EC</button>
-                    </div>
-                    <h5 class="fw-700 mb-4 text-dark"><i class="fa-solid fa-chart-line text-emerald-600 me-2"></i>{{ chartNameDisplay }}</h5>
-                    <div style="position: relative; height:380px;"><canvas id="academicTempChart"></canvas></div>
-                </div>
-            </div>
-        </main>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
-<script>
-    const firebaseConfig = { databaseURL: "https://do-an-tot-nghiep-f587e-default-rtdb.asia-southeast1.firebasedatabase.app" };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
-    // 🚀 ĐÃ CẬP NHẬT: 3 ĐƯỜNG LINK TRÍCH XUẤT CSV ĐỘC LẬP CHÍNH THỨC CỦA HAI BẠN (Sheet2, Sheet3, Sheet4)
-    const sheetUrls = {
-        Node1: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSfRDUArGqV8FrZxLD-SYJc7E7ctaxnQpx2YD-64WwnnDRy5TSqPRu8090I0QEknoUQcm1l4-lbPFeg/pub?gid=1379159128&single=true&output=csv", 
-        Node2: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSfRDUArGqV8FrZxLD-SYJc7E7ctaxnQpx2YD-64WwnnDRy5TSqPRu8090I0QEknoUQcm1l4-lbPFeg/pub?gid=552691129&single=true&output=csv", 
-        Node3: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSfRDUArGqV8FrZxLD-SYJc7E7ctaxnQpx2YD-64WwnnDRy5TSqPRu8090I0QEknoUQcm1l4-lbPFeg/pub?gid=1017894216&single=true&output=csv"  
-    };
-
-    const app = Vue.createApp({
-        data() {
-            return {
-                isLoggedIn: false,
-                currentTab: 'realtime',
-                activeDbNode: 'Node1',
-                activeChartType: 'air_temp',
-                tabTitle: 'Mục 1: Thông số trạm quan trắc thời gian thực',
-                loginForm: { user: '', pass: '' },
-                loginError: false,
-                passwordFieldType: 'password',
-                filterDate: new Date().toISOString().split('T')[0], 
-                nodes: {
-                    Node1: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
-                    Node2: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
-                    Node3: { air_temperature: 0, air_humidity: 0 }
-                },
-                logs: { Node1: [], Node2: [], Node3: [] },
-                allSheetData: null
-            }
-        },
-        computed: {
-            chartNameDisplay() {
-                if (this.activeChartType === 'air_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Không Khí (°C)';
-                if (this.activeChartType === 'air_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Không Khí (%)';
-                if (this.activeChartType === 'soil_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Đất (°C)';
-                if (this.activeChartType === 'soil_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Đất (%)';
-                return 'Đồ thị phân tích diễn tiến Chỉ số Dẫn Điện EC Đất (uS/cm)';
-            }
-        },
-        watch: {
-            currentTab(newTab) {
-                if (newTab === 'realtime') this.tabTitle = 'Mục 1: Thông số trạm quan trắc thời gian thực';
-                if (newTab === 'database' || newTab === 'charts') { 
-                    this.tabTitle = newTab === 'database' ? 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ' : 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; 
-                    this.fetchAllGoogleSheets(); 
-                }
-            },
-            activeChartType() { if (this.currentTab === 'charts') this.renderChart(); },
-            activeDbNode() { if (this.currentTab === 'database') this.fetchAllGoogleSheets(); }
-        },
-        methods: {
-            togglePasswordVisibility() {
-                this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
-            },
-            handleLogin() {
-                const u = this.loginForm.user.trim().toLowerCase();
-                const p = this.loginForm.pass.trim();
-                if ((u === 'baokhang' && p === '22138043') || (u === 'thekiet' && p === '22138051')) { 
-                    this.isLoggedIn = true; 
-                    this.initFirebase(); 
-                } else { 
-                    this.loginError = true; 
-                }
-            },
-            logout() { this.isLoggedIn = false; this.loginForm.user = ''; this.loginForm.pass = ''; },
-            
-            initFirebase() {
-                const nodeKeys = ['Node1', 'Node2', 'Node3'];
-                nodeKeys.forEach(key => {
-                    // Đồng bộ luồng mốc tin mới nhất trong History để Mục 1 Realtime luôn cập nhật số đo thực
-                    database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
-                        const historyData = snapshot.val();
-                        if (historyData) {
-                            const dataValues = Object.values(historyData);
-                            const val = dataValues[dataValues.length - 1]; 
-                            if (val) {
-                                this.nodes[key].air_temperature = Number(val.air_temperature) || 0;
-                                this.nodes[key].air_humidity = Number(val.air_humidity) || 0;
-                                if (key !== 'Node3') {
-                                    this.nodes[key].soil_temperature = Number(val.soil_temperature) || 0;
-                                    this.nodes[key].soil_humidity = Number(val.soil_humidity) || 0;
-                                    this.nodes[key].soil_ec = Number(val.soil_ec) || 0;
-                                }
-                            }
-                        }
-                    });
-                });
-                this.fetchAllGoogleSheets();
-            },
-
-            // 🚀 THUẬT TOÁN QU SCAN SONG SONG 3 ĐƯỜNG LINK SHEET ĐỘC LẬP TỰ ĐỘNG CHUẨN HÓA CỘT BIẾN
-            fetchAllGoogleSheets() {
-                const keys = ['Node1', 'Node2', 'Node3'];
-                const promises = keys.map(key => {
-                    return fetch(sheetUrls[key])
-                        .then(res => res.text())
-                        .then(csvText => {
-                            const lines = csvText.split("\n");
-                            if (lines.length < 2) return [];
-
-                            // Chuẩn hóa dòng Header chữ thường + xóa khoảng trắng ngầm của Excel
-                            const headers = lines[0].split(",").map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
-                            
-                            const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
-                            const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("temperature") || h.includes("khi"));
-                            const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("humidity") || h.includes("khi"));
-                            const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("dat"));
-                            const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("dat"));
-                            const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec") || h.includes("dan_dien"));
-
-                            const currentLogs = [];
-                            for (let i = 1; i < lines.length; i++) {
-                                if (!lines[i].trim()) continue;
-                                const cols = lines[i].split(",");
-
-                                const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
-                                currentLogs.push({
-                                    time: timeStr,
-                                    airT: idxAirT !== -1 ? (Number(cols[idxAirT]) || 0) : 0,
-                                    airH: idxAirH !== -1 ? (Number(cols[idxAirH]) || 0) : 0,
-                                    soilT: idxSoilT !== -1 ? (Number(cols[idxSoilT]) || 0) : 0,
-                                    soilH: idxSoilH !== -1 ? (Number(cols[idxSoilH]) || 0) : 0,
-                                    ec: idxEc !== -1 ? (Number(cols[idxEc]) || 0) : 0
-                                });
-                            }
-                            return { key, data: currentLogs };
-                        });
-                });
-
-                Promise.all(promises).then(results => {
-                    results.forEach(res => {
-                        if (res) {
-                            // Lấy 10 mốc mới nhất đảo ngược nạp lên bảng Mục 2
-                            this.logs[res.key] = res.data.slice(-10).reverse();
-                        }
-                    });
-                    
-                    this.allSheetData = {
-                        Node1: results.find(r => r.key === 'Node1').data,
-                        Node2: results.find(r => r.key === 'Node2').data,
-                        Node3: results.find(r => r.key === 'Node3').data
-                    };
-
-                    if (this.currentTab === 'charts') { this.renderChart(); }
-                }).catch(err => console.error("Lỗi đồng bộ mảng: ", err));
-            },
-
-            // TRÍCH XUẤT NHẬT KÝ ĐỘC LẬP TỪ TỪNG SHEET RIÊNG BIỆT THEO NGÀY
-            exportCSVFromGoogleSheet() {
-                const selectedNode = this.activeDbNode;
-                const chosenDate = this.filterDate; 
-                const rawDate = chosenDate.split('-');
-                const formattedDateCheck = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
-
-                fetch(sheetUrls[selectedNode])
-                    .then(response => response.text())
-                    .then(csvText => {
-                        const lines = csvText.split("\n");
-                        if (lines.length < 2) return;
-
-                        const headers = lines[0].split(",").map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
-                        const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
-                        const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("air_temperature"));
-                        const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("air_humidity"));
-                        const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("soil_temperature"));
-                        const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("soil_humidity"));
-                        const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec"));
-
-                        let csvContent = "\uFEFFsep=,\n"; 
-                        csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
-                        let countRows = 0;
-
-                        for (let i = 1; i < lines.length; i++) {
-                            if (!lines[i].trim()) continue;
-                            const cols = lines[i].split(",");
-                            const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
-
-                            if (timeStr.includes(formattedDateCheck)) {
-                                const airT = idxAirT !== -1 ? Number(cols[idxAirT]).toFixed(1) : "0.0";
-                                const airH = idxAirH !== -1 ? Number(cols[idxAirH]).toFixed(1) : "0.0";
-                                const soilT = idxSoilT !== -1 ? Number(cols[idxSoilT]).toFixed(1) : "0.0";
-                                const soilH = idxSoilH !== -1 ? Number(cols[idxSoilH]).toFixed(1) : "0.0";
-                                const ec = idxEc !== -1 ? (Number(cols[idxEc]) || 0) : 0;
-
-                                csvContent += timeStr + "," + airT + "," + airH + "," + soilT + "," + soilH + "," + ec + "\n";
-                                countRows++;
-                            }
-                        }
-
-                        if (countRows === 0) {
-                            alert("Không tìm thấy kết quả nhật ký nào cho ngày " + formattedDateCheck);
-                            return;
-                        }
-
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const link = document.createElement("a");
-                        link.href = URL.createObjectURL(blob);
-                        link.setAttribute("download", "NhatKy_Sheet_" + selectedNode + "_Ngay_" + chosenDate + ".csv");
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    });
-            },
-
-            formatNumber(val) {
-                if (val === undefined || val === null) return "0.0";
-                const num = Number(val);
-                return isNaN(num) ? "0.0" : num.toFixed(1);
-            },
-
-            renderChart() {
-                setTimeout(() => {
-                    const ctx = document.getElementById('academicTempChart'); 
-                    if (!ctx) return;
-                    if (!this.allSheetData || !this.allSheetData.Node1 || this.allSheetData.Node1.length === 0) return;
-                    if (window.chartInstanceGlobal) { window.chartInstanceGlobal.destroy(); }
-                    
-                    const n1Data = this.allSheetData.Node1.slice(-10);
-                    const n2Data = this.allSheetData.Node2.slice(-10);
-                    const n3Data = this.allSheetData.Node3.slice(-10);
-                    const labels = n1Data.map(l => l.time); 
-                    let datasets = [];
-
-                    if (this.activeChartType === 'air_temp') {
-                        datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: n3Data.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
-                        ];
-                    } else if (this.activeChartType === 'air_hum') {
-                        datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: n1Data.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: n2Data.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: n3Data.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Outer Ngoài)', data: n3Data.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (this.activeChartType === 'soil_temp') {
                         datasets = [
