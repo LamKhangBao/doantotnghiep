@@ -11,7 +11,7 @@
     
     <style>
         :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; margin: 0; }
 
         /* Login Design Nông Lâm */
         #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
@@ -169,51 +169,107 @@
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
 <script>
+    // Cấu hình Database Firebase gốc
     const firebaseConfig = { databaseURL: "https://do-an-tot-nghiep-f587e-default-rtdb.asia-southeast1.firebasedatabase.app" };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const { createApp, ref, reactive, watch, computed } = Vue;
-
-    createApp({
-        setup() {
-            const isLoggedIn = ref(false);
-            const currentTab = ref('realtime');
-            const activeDbNode = ref('Node1'); 
-            const activeChartType = ref('air_temp'); 
-            const tabTitle = ref('Mục 1: Thông số trạm quan trắc thời gian thực');
-            const loginForm = reactive({ user: '', pass: '' });
-            const loginError = ref(false);
-            const passwordFieldType = ref('password'); 
-            let chartInstance = null;
-
-            const nodes = reactive({
-                Node1: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
-                Node2: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
-                Node3: { air_temperature: 0, air_humidity: 0 }
-            });
-
-            const logs = reactive({ Node1: [], Node2: [], Node3: [] });
-
-            const chartNameDisplay = computed(() => {
-                if (activeChartType.value === 'air_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Không Khí (°C)';
-                if (activeChartType.value === 'air_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Không Khí (%)';
-                if (activeChartType.value === 'soil_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Đất (°C)';
-                if (activeChartType.value === 'soil_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Đất (%)';
+    // Chuẩn hóa cấu trúc khởi tạo độc lập của Vue 3 tránh lỗi Crash Render
+    const app = Vue.createApp({
+        data() {
+            return {
+                isLoggedIn: false,
+                currentTab: 'realtime',
+                activeDbNode: 'Node1',
+                activeChartType: 'air_temp',
+                tabTitle: 'Mục 1: Thông số trạm quan trắc thời gian thực',
+                loginForm: { user: '', pass: '' },
+                loginError: false,
+                passwordFieldType: 'password',
+                nodes: {
+                    Node1: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
+                    Node2: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
+                    Node3: { air_temperature: 0, air_humidity: 0 }
+                },
+                logs: { Node1: [], Node2: [], Node3: [] }
+            }
+        },
+        computed: {
+            chartNameDisplay() {
+                if (this.activeChartType === 'air_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Không Khí (°C)';
+                if (this.activeChartType === 'air_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Không Khí (%)';
+                if (this.activeChartType === 'soil_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Đất (°C)';
+                if (this.activeChartType === 'soil_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Đất (%)';
                 return 'Đồ thị phân tích diễn tiến Chỉ số Dẫn Điện EC Đất (uS/cm)';
-            });
+            }
+        },
+        watch: {
+            currentTab(newTab) {
+                if (newTab === 'realtime') this.tabTitle = 'Mục 1: Thông số trạm quan trắc thời gian thực';
+                if (newTab === 'database') this.tabTitle = 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ';
+                if (newTab === 'charts') { this.tabTitle = 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; this.renderChart(); }
+            },
+            activeChartType() {
+                if (this.currentTab === 'charts') this.renderChart();
+            }
+        },
+        methods: {
+            togglePasswordVisibility() {
+                this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
+            },
+            handleLogin() {
+                if (this.loginForm.user.trim() === 'doantotnghiep' && this.loginForm.pass === '12345678') { 
+                    this.isLoggedIn = true; 
+                    this.initFirebase(); 
+                } else { 
+                    this.loginError = true; 
+                }
+            },
+            logout() {
+                this.isLoggedIn = false;
+                this.loginForm.pass = '';
+            },
+            initFirebase() {
+                const nodeKeys = ['Node1', 'Node2', 'Node3'];
+                nodeKeys.forEach(key => {
+                    // Đồng bộ dữ liệu biến đơn Realtime ngoài gốc
+                    database.ref('/' + key).on('value', (snapshot) => {
+                        const val = snapshot.val();
+                        if (val) {
+                            this.nodes[key].air_temperature = Number(val.air_temperature) || 0;
+                            this.nodes[key].air_humidity = Number(val.air_humidity) || 0;
+                            if (key !== 'Node3') {
+                                this.nodes[key].soil_temperature = Number(val.soil_temperature) || 0;
+                                this.nodes[key].soil_humidity = Number(val.soil_humidity) || 0;
+                                this.nodes[key].soil_ec = Number(val.soil_ec) || 0;
+                            }
+                        }
+                    });
 
-            const togglePasswordVisibility = () => {
-                passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
-            };
-
-            const exportCSVForCurrentNode = () => {
-                const targetLogs = logs[activeDbNode.value];
+                    // Đồng bộ chuỗi mảng lịch sử lồng bên trong Node (Giới hạn cứng 10 dòng)
+                    this.logs[key] = [];
+                    database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
+                        const logItem = snapshot.val();
+                        if (logItem) {
+                            this.logs[key].push({
+                                time: String(logItem.time_log || "").replace(/"/g, ""), 
+                                airT: Number(logItem.air_temperature) || 0, 
+                                airH: Number(logItem.air_humidity) || 0,
+                                soilT: Number(logItem.soil_temperature) || 0, 
+                                soilH: Number(logItem.soil_humidity) || 0,
+                                ec: Number(logItem.soil_ec) || 0
+                            });
+                            if (this.logs[key].length > 10) this.logs[key].shift();
+                            if (this.currentTab === 'charts') { this.renderChart(); }
+                        }
+                    });
+                });
+            },
+            exportCSVForCurrentNode() {
+                const targetLogs = this.logs[this.activeDbNode];
                 if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
                 
-                let csvContent = "\uFEFF"; 
-                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
-                
+                let csvContent = "\uFEFFMoc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
                 targetLogs.forEach(item => {
                     csvContent += item.time + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
                 });
@@ -222,106 +278,57 @@
                 const link = document.createElement("a");
                 const dateStr = new Date().toLocaleDateString().replace(/\//g, "-");
                 link.href = URL.createObjectURL(blob);
-                link.setAttribute("download", "NhatKy_DuLieu_" + activeDbNode.value + "_Ngay_" + dateStr + ".csv");
+                link.setAttribute("download", "NhatKy_DuLieu_" + this.activeDbNode + "_Ngay_" + dateStr + ".csv");
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            };
-
-            const handleLogin = () => {
-                if (loginForm.user.trim() === 'doantotnghiep' && loginForm.pass === '12345678') { 
-                    isLoggedIn.value = true; 
-                    initFirebase(); 
-                } else { 
-                    loginError.value = true; 
-                }
-            };
-
-            const logout = () => { isLoggedIn.value = false; loginForm.pass = ''; };
-
-            const initFirebase = () => {
-                const nodeKeys = ['Node1', 'Node2', 'Node3'];
-                nodeKeys.forEach(key => {
-                    database.ref('/' + key).on('value', (snapshot) => {
-                        const val = snapshot.val();
-                        if (val) {
-                            nodes[key].air_temperature = Number(val.air_temperature) || 0;
-                            nodes[key].air_humidity = Number(val.air_humidity) || 0;
-                            if (key !== 'Node3') {
-                                nodes[key].soil_temperature = Number(val.soil_temperature) || 0;
-                                nodes[key].soil_humidity = Number(val.soil_humidity) || 0;
-                                nodes[key].soil_ec = Number(val.soil_ec) || 0;
-                            }
-                        }
-                    });
-
-                    logs[key] = [];
-                    database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
-                        const logItem = snapshot.val();
-                        if (logItem) {
-                            logs[key].push({
-                                time: String(logItem.time_log || "").replace(/"/g, ""), 
-                                airT: Number(logItem.air_temperature) || 0, airH: Number(logItem.air_humidity) || 0,
-                                soilT: Number(logItem.soil_temperature) || 0, soilH: Number(logItem.soil_humidity) || 0,
-                                ec: Number(logItem.soil_ec) || 0
-                            });
-                            if (logs[key].length > 10) logs[key].shift();
-                            if (currentTab.value === 'charts') { renderChart(); }
-                        }
-                    });
-                });
-            };
-
-            const renderChart = () => {
+            },
+            renderChart() {
                 setTimeout(() => {
-                    const ctx = document.getElementById('academicTempChart'); if (!ctx) return;
-                    if (chartInstance) { chartInstance.destroy(); }
-                    const labels = logs.Node1.map(l => l.time); let datasets = [];
+                    const ctx = document.getElementById('academicTempChart'); 
+                    if (!ctx) return;
+                    if (window.chartInstanceGlobal) { window.chartInstanceGlobal.destroy(); }
+                    
+                    const labels = this.logs.Node1.map(l => l.time); 
+                    let datasets = [];
 
-                    if (activeChartType.value === 'air_temp') {
+                    if (this.activeChartType === 'air_temp') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: this.logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: this.logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 3 (Target Ngoài)', data: this.logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
-                    } else if (activeChartType.value === 'air_hum') {
+                    } else if (this.activeChartType === 'air_hum') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: this.logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: this.logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 3 (Target Ngoài)', data: this.logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
-                    } else if (activeChartType.value === 'soil_temp') {
+                    } else if (this.activeChartType === 'soil_temp') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.soilT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.soilT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: this.logs.Node1.map(l => l.soilT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: this.logs.Node2.map(l => l.soilT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
-                    } else if (activeChartType.value === 'soil_hum') {
+                    } else if (this.activeChartType === 'soil_hum') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.soilH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.soilH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: this.logs.Node1.map(l => l.soilH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: this.logs.Node2.map(l => l.soilH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
-                    } else if (activeChartType.value === 'soil_ec') {
+                    } else if (this.activeChartType === 'soil_ec') {
                         datasets = [
-                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.ec), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.ec), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 1 (Trong nhà)', data: this.logs.Node1.map(l => l.ec), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: this.logs.Node2.map(l => l.ec), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     }
 
-                    chartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
-                }, 100);
-            };
-
-            watch(currentTab, (newTab) => {
-                if (newTab === 'realtime') tabTitle.value = 'Mục 1: Thông số trạm quan trắc thời gian thực';
-                if (newTab === 'database') tabTitle.value = 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ';
-                if (newTab === 'charts') { tabTitle.value = 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
-            });
-
-            watch(activeChartType, () => { if (currentTab.value === 'charts') renderChart(); });
-
-            return { isLoggedIn, currentTab, activeDbNode, activeChartType, chartNameDisplay, tabTitle, loginForm, loginError, passwordFieldType, togglePasswordVisibility, exportCSVForCurrentNode, nodes, logs };
+                    window.chartInstanceGlobal = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
+                }, 120);
+            }
         }
-    }).mount('#app');
+    });
+    
+    // Kích hoạt gắn kết ứng dụng cứng
+    app.mount('#app');
 </script>
 </body>
 </html>
