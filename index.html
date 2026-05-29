@@ -27,7 +27,7 @@
         .nav-link:hover, .nav-link.active { background: rgba(255, 255, 255, 0.15); color: white; font-weight: 600; }
 
         #main-content { margin-left: var(--sidebar-width); padding: 40px; min-height: 100vh; }
-        .node-card { background: white; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(6,78,59,0.02); margin-bottom: 30px; border: 1px solid #e2e8f0; }
+        .node-card { background: white; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(6,78,59,0.02); margin-bottom: 30px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; }
         .node-header { background: #f8fafc; padding: 16px 24px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
         .sensor-row { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         .sensor-val { font-size: 20px; font-weight: 700; }
@@ -38,6 +38,10 @@
 
         .filter-input { padding: 8px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px; color: #475569; font-weight: 600; background: #f8fafc; outline: none; }
         .filter-input:focus { border-color: var(--primary); background: white; }
+
+        /* Hiệu ứng chớp nháy cảnh báo đồ án */
+        .blink-alert { animation: blinker 1.5s linear infinite; font-weight: 700; }
+        @keyframes blinker { 50% { opacity: 0.4; } }
 
         canvas { width: 100% !important; height: 380px !important; }
         [v-cloak] { display: none; }
@@ -91,27 +95,43 @@
         <main id="main-content">
             <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
                 <div><h3 class="fw-800 m-0 text-dark">{{ tabTitle }}</h3><p class="text-muted small m-0 mt-1">Hệ thống phân tầng tích hợp đám mây Google Sheet & Firebase</p></div>
-                <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;"><span class="spinner-grow spinner-grow-sm"></span> LIVE CONNECTED</div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <div v-if="currentSensorError" class="badge bg-warning text-dark px-3 py-2 border-0 blink-alert" style="border-radius:10px; font-size: 13px; font-weight: 700;">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> SENSOR ERROR
+                    </div>
+
+                    <div v-if="isWifiLost" class="badge bg-danger px-3 py-2 border-0 blink-alert" style="border-radius:10px; font-size: 13px; font-weight: 700;">
+                        <span class="spinner-grow spinner-grow-sm me-1"></span> NO WIFI CONNECTED
+                    </div>
+                    <div v-else class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;">
+                        <span class="spinner-grow spinner-grow-sm"></span> LIVE CONNECTED
+                    </div>
+                </div>
             </header>
 
             <div v-if="currentTab == 'realtime'">
                 <div class="row">
                     <div v-for="i in [1, 2]" :key="'rt-'+i" class="col-md-4">
-                        <div class="node-card">
-                            <div class="node-header text-dark d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-building-shield text-emerald-600 me-2"></i>TRẠM TRONG NHÀ MÀNG 0{{i}}</span><span class="badge bg-success-subtle text-success">Inside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-primary">{{ formatNumber(nodes['Node'+i].air_temperature) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-success">{{ formatNumber(nodes['Node'+i].air_humidity) }} %</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span class="sensor-val text-warning">{{ formatNumber(nodes['Node'+i].soil_temperature) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm đất</span><span class="sensor-val text-info">{{ formatNumber(nodes['Node'+i].soil_humidity) }} %</span></div>
-                            <div class="sensor-row"><span>Độ dẫn điện EC đất</span><span class="sensor-val text-dark">{{ nodes['Node'+i].soil_ec }} uS/cm</span></div>
+                        <div class="node-card" :style="wifiAlerts['Node'+i] ? 'border: 2px solid var(--danger);' : ''">
+                            <div class="node-header d-flex justify-content-between align-items-center" :class="wifiAlerts['Node'+i] ? 'bg-danger-subtle text-danger' : 'text-dark'">
+                                <span><i class="fa-solid fa-building-shield me-2"></i>TRẠM TRONG NHÀ MÀNG 0{{i}}</span>
+                                <span v-if="wifiAlerts['Node'+i]" class="badge bg-danger">MẤT WIFI</span>
+                                <span v-else class="badge bg-success-subtle text-success">ONLINE</span>
+                            </div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val" :class="nodes['Node'+i].air_temperature == 0 ? 'text-danger blink-alert' : 'text-primary'">{{ formatNumber(nodes['Node'+i].air_temperature) }} °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val" :class="nodes['Node'+i].air_humidity == 0 ? 'text-danger blink-alert' : 'text-success'">{{ formatNumber(nodes['Node'+i].air_humidity) }} %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span class="sensor-val" :class="nodes['Node'+i].soil_temperature == 0 ? 'text-danger blink-alert' : 'text-warning'">{{ formatNumber(nodes['Node'+i].soil_temperature) }} °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm đất</span><span class="sensor-val" :class="nodes['Node'+i].soil_humidity == 0 ? 'text-danger blink-alert' : 'text-info'">{{ formatNumber(nodes['Node'+i].soil_humidity) }} %</span></div>
+                            <div class="sensor-row"><span>Độ dẫn điện EC đất</span><span class="sensor-val" :class="nodes['Node'+i].soil_ec == 0 ? 'text-danger blink-alert' : 'text-dark'">{{ nodes['Node'+i].soil_ec }} uS/cm</span></div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="node-card" style="border-top: 4px solid var(--warning);">
-                            <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span><span class="badge bg-warning-subtle text-warning">Outside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_temperature) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_humidity) }} %</span></div>
-                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài (Mát hơn và khô hơn bên trong).</div>
+                            <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val" :class="nodes.Node3.air_temperature == 0 ? 'text-danger blink-alert' : 'text-warning'">{{ formatNumber(nodes.Node3.air_temperature) }} °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val" :class="nodes.Node3.air_humidity == 0 ? 'text-danger blink-alert' : 'text-warning'">{{ formatNumber(nodes.Node3.air_humidity) }} %</span></div>
+                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài.</div>
                         </div>
                     </div>
                 </div>
@@ -125,7 +145,6 @@
                             <button @click="activeDbNode = 'Node2'" class="node-selector-btn" :class="{active: activeDbNode == 'Node2'}">Trạm 02 (Trong nhà)</button>
                             <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">Trạm 03 (Outer Ngoài)</button>
                         </div>
-                        
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="small fw-bold text-secondary"><i class="fa-regular fa-calendar-days me-1"></i> Lọc ngày báo cáo:</span>
                             <input type="date" v-model="filterDate" class="filter-input">
@@ -134,7 +153,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div class="table-responsive">
                         <h5 class="fw-700 text-secondary mb-3"><i class="fa-solid fa-table-list text-emerald-600 me-2"></i>Bảng ghi nhận 10 mốc từ Google Sheet mới nhất</h5>
                         <table class="table table-hover align-middle m-0">
@@ -208,6 +226,10 @@
                     Node3: { air_temperature: 0, air_humidity: 0 }
                 },
                 logs: { Node1: [], Node2: [], Node3: [] },
+                
+                // Thuộc tính chẩn đoán hệ thống
+                wifiAlerts: { Node1: false, Node2: false, Node3: false },
+                lastHeartbeat: { Node1: Date.now(), Node2: Date.now(), Node3: Date.now() },
                 allSheetData: null
             }
         },
@@ -218,6 +240,20 @@
                 if (this.activeChartType === 'soil_temp') return 'Đồ thị phân tích diễn tiến Nhiệt Độ Đất (°C)';
                 if (this.activeChartType === 'soil_hum') return 'Đồ thị phân tích diễn tiến Độ Ẩm Đất (%)';
                 return 'Đồ thị phân tích diễn tiến Chỉ số Dẫn Điện EC Đất (uS/cm)';
+            },
+            // Kiểm tra trạng thái Wifi tổng thể cho nhãn Header
+            isWifiLost() {
+                return this.wifiAlerts.Node1 || this.wifiAlerts.Node2 || this.wifiAlerts.Node3;
+            },
+            // Kiểm tra trạng thái cảm biến dựa vào giá trị 0 hoặc NaN của trạm hiện tại
+            currentSensorError() {
+                const node = this.nodes[this.activeDbNode];
+                if (!node) return false;
+                if (node.air_temperature === 0 || node.air_humidity === 0) return true;
+                if (this.activeDbNode !== 'Node3' && (node.soil_temperature === 0 || node.soil_humidity === 0 || node.soil_ec === 0)) {
+                    return true;
+                }
+                return false;
             }
         },
         watch: {
@@ -229,7 +265,22 @@
                 }
             },
             activeChartType() { if (this.currentTab === 'charts') this.renderChart(); },
-            activeDbNode() { if (this.currentTab === 'database') this.fetchAllGoogleSheets(); }
+            activeDbNode() { 
+                if (this.currentTab === 'database') this.fetchAllGoogleSheets(); 
+            }
+        },
+        mounted() {
+            // Heartbeat check luồng ngầm (7 giây vắng tin tức từ Firebase -> Đổi nút đỏ No Wifi)
+            setInterval(() => {
+                if (this.isLoggedIn) {
+                    const now = Date.now();
+                    ['Node1', 'Node2', 'Node3'].forEach(k => {
+                        if (now - this.lastHeartbeat[k] > 7000) {
+                            this.wifiAlerts[k] = true;
+                        }
+                    });
+                }
+            }, 2000);
         },
         methods: {
             togglePasswordVisibility() {
@@ -253,6 +304,11 @@
                     database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                         const historyData = snapshot.val();
                         if (historyData) {
+                            
+                            // Có phản hồi từ Firebase -> Reset trạng thái Wifi
+                            this.lastHeartbeat[key] = Date.now();
+                            this.wifiAlerts[key] = false;
+
                             const dataValues = Object.values(historyData);
                             const val = dataValues[dataValues.length - 1]; 
                             if (val) {
@@ -304,7 +360,6 @@
                             for (let i = 1; i < lines.length; i++) {
                                 if (!lines[i].trim()) continue;
                                 const cols = this.splitCSVLine(lines[i]);
-
                                 const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
                                 
                                 currentLogs.push({
@@ -326,13 +381,11 @@
                             this.logs[res.key] = res.data.slice(-10).reverse();
                         }
                     });
-                    
                     this.allSheetData = {
                         Node1: results.find(r => r.key === 'Node1').data,
                         Node2: results.find(r => r.key === 'Node2').data,
                         Node3: results.find(r => r.key === 'Node3').data
                     };
-
                     if (this.currentTab === 'charts') { this.renderChart(); }
                 }).catch(err => console.error("Lỗi đồng bộ mảng: ", err));
             },
