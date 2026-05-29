@@ -13,13 +13,13 @@
         :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; margin: 0; }
 
-        /* Login Screen */
+        /* Màn hình đăng nhập Glassmorphism */
         #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
         .login-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 100%; max-width: 420px; }
         .password-wrapper { position: relative; }
         .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; z-index: 10; }
 
-        /* Main Dashboard */
+        /* Giao diện trang chủ sau khi đăng nhập */
         #dashboard-page { display: none; }
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
         .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
@@ -32,6 +32,7 @@
         .sensor-row { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         .sensor-val { font-size: 20px; font-weight: 700; }
 
+        /* Khung quản lý bảng và hộp lọc thời gian */
         .table-container { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; }
         .node-selector-btn { padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; background: white; color: #475569; transition: 0.2s; }
         .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(5,150,105,0.2); }
@@ -59,7 +60,7 @@
             <div class="mb-4 text-start">
                 <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
                 <div class="password-wrapper">
-                    <input type="password" id="password" class="form-control" placeholder="Nhập mã số sinh viên...">
+                    <input type="password" id="password" class="form-control" placeholder="Nhập mã số sinh viên..." @keyup.enter="handleLogin()">
                     <i class="fa-solid fa-eye-slash password-toggle" id="toggle-eye" onclick="togglePasswordVisibility()"></i>
                 </div>
             </div>
@@ -83,7 +84,7 @@
                 
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051<br>
+                    Phạm Thế Kiệt : 22138051
                 </div>
                 
                 <div onclick="logout()" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</div>
@@ -92,7 +93,7 @@
 
         <main id="main-content">
             <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
-                <div><h3 id="panel-title" class="fw-800 m-0 text-dark">Mục 1: Thông số trạm quan trắc thời gian thực</h3><p class="text-muted small m-0 mt-1">Dữ liệu đồng bộ mã nguồn lồng nội bộ Firebase</p></div>
+                <div><h3 id="panel-title" class="fw-800 m-0 text-dark">Mục 1: Thông số trạm quan thực thời gian thực</h3><p class="text-muted small m-0 mt-1">Dữ liệu đồng bộ mã nguồn lồng nội bộ Firebase</p></div>
                 <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;"><span class="spinner-grow spinner-grow-sm"></span> LIVE CONNECTED</div>
             </header>
 
@@ -212,6 +213,7 @@
         const pass = document.getElementById('password').value.trim();
         const errNode = document.getElementById('login-error');
 
+        // Logic so khớp tài khoản và MSSV riêng của hai bạn
         if ((user === 'baokhang' && pass === '22138043') || (user === 'thekiet' && pass === '22138051')) {
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('dashboard-page').style.display = 'block';
@@ -265,23 +267,24 @@
         renderChartGraphics();
     }
 
-    // 🚀 THUẬT TOÁN ĐỒNG BỘ ĐÃ ĐƯỢC THÊM CƠ CHẾ KIỂM TRA PHẦN TỬ AN TOÀN TRÁNH BỊ SẬP LUỒNG GÁN INNERTEXT
+    // 🚀 HÀM PHÂN TÍCH LÕI FIREBASE: VÁ LỖI HIỂN THỊ REALTIME BẰNG CƠ CHẾ KIỂM TRA MẢNG AN TOÀN TRÁNH SẬP LUỒNG
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
-            // Lấy dòng dữ liệu mới nhất xuất hiện ở cuối mảng History
+            // Lấy 1 dòng dữ liệu mới nhất xuất hiện ở cuối mảng History
             database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
                     const dataValues = Object.values(historyData);
-                    const val = dataValues[dataValues.length - 1]; // bốc mốc phần tử mới nhất vừa đẩy lên
+                    // Lấy phần tử có index cuối cùng trong danh sách để nhận dữ liệu mới nhất từ ESP32
+                    const val = dataValues[dataValues.length - 1]; 
                     
                     if (val) {
-                        // VÁ LỖI AN TOÀN: Chỉ gán dữ liệu khi thẻ ID thực sự tồn tại trên giao diện DOM
                         const elAt = document.getElementById(key.toLowerCase() + '-at');
                         const elAh = document.getElementById(key.toLowerCase() + '-ah');
                         
+                        // Safe DOM check: Chỉ gán dữ liệu khi thẻ ID thực sự tồn tại trên giao diện HTML
                         if (elAt && elAh) {
                             elAt.innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
                             elAh.innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
@@ -301,7 +304,7 @@
                 }
             });
 
-            // Đồng bộ luồng mảng lịch sử 10 dòng
+            // Đồng bộ dữ liệu bảng lịch sử 10 dòng gần nhất
             database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
@@ -405,6 +408,7 @@
         globalChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
     }
 
+    // HÀM XUẤT EXCEL CHIA HÀNG CỘT THẲNG TẮP
     function exportCSVForCurrentNode() {
         const targetLogs = logs[activeDbNode];
         if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
@@ -415,11 +419,12 @@
         const rawDate = filterDateVal.split('-');
         const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
 
+        // Lệnh sep=,\n ép Microsoft Excel phân chia cột rõ ràng không bị kẹt dồn hàng
         let csvContent = "\uFEFFsep=,\n"; 
         csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
         
         targetLogs.forEach(item => {
-            const fullTimeField = formattedDate + " " + filterTimeVal;
+            const fullTimeField = formattedDate + " " + item.time;
             csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
         });
         
