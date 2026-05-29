@@ -99,18 +99,18 @@
                     <div v-for="i in [1, 2]" :key="'rt-'+i" class="col-md-4">
                         <div class="node-card">
                             <div class="node-header text-dark d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-building-shield text-emerald-600 me-2"></i>TRẠM TRONG NHÀ MÀNG 0{{i}}</span><span class="badge bg-success-subtle text-success">Inside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-primary">{{ Number(nodes['Node'+i].air_temperature).toFixed(1) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-success">{{ Number(nodes['Node'+i].air_humidity).toFixed(1) }} %</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span class="sensor-val text-warning">{{ Number(nodes['Node'+i].soil_temperature).toFixed(1) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm đất</span><span class="sensor-val text-info">{{ Number(nodes['Node'+i].soil_humidity).toFixed(1) }} %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-primary">{{ formatNumber(nodes['Node'+i].air_temperature) }} °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-success">{{ formatNumber(nodes['Node'+i].air_humidity) }} %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span class="sensor-val text-warning">{{ formatNumber(nodes['Node'+i].soil_temperature) }} °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm đất</span><span class="sensor-val text-info">{{ formatNumber(nodes['Node'+i].soil_humidity) }} %</span></div>
                             <div class="sensor-row"><span>Độ dẫn điện EC đất</span><span class="sensor-val text-dark">{{ nodes['Node'+i].soil_ec }} uS/cm</span></div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="node-card" style="border-top: 4px solid var(--warning);">
                             <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span><span class="badge bg-warning-subtle text-warning">Outside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-warning">{{ Number(nodes.Node3.air_temperature).toFixed(1) }} °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-warning">{{ Number(nodes.Node3.air_humidity).toFixed(1) }} %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_temperature) }} °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val text-warning">{{ formatNumber(nodes.Node3.air_humidity) }} %</span></div>
                             <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài (Mát hơn và khô hơn bên trong).</div>
                         </div>
                     </div>
@@ -144,10 +144,10 @@
                             <tbody>
                                 <tr v-for="(log, index) in logs[activeDbNode]" :key="'log-'+index">
                                     <td class="fw-600 text-emerald-700"><i class="fa-regular fa-clock me-1 text-muted"></i>{{ log.time }}</td>
-                                    <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ Number(log.airT).toFixed(1) }} °C</span></td>
-                                    <td><span class="badge bg-success-subtle text-success fw-bold">{{ Number(log.airH).toFixed(1) }} %</span></td>
-                                    <td v-if="activeDbNode != 'Node3'">{{ Number(log.soilT).toFixed(1) }} °C</td>
-                                    <td v-if="activeDbNode != 'Node3'">{{ Number(log.soilH).toFixed(1) }} %</td>
+                                    <td><span class="badge bg-primary-subtle text-primary fw-bold">{{ formatNumber(log.airT) }} °C</span></td>
+                                    <td><span class="badge bg-success-subtle text-success fw-bold">{{ formatNumber(log.airH) }} %</span></td>
+                                    <td v-if="activeDbNode != 'Node3'">{{ formatNumber(log.soilT) }} °C</td>
+                                    <td v-if="activeDbNode != 'Node3'">{{ formatNumber(log.soilH) }} %</td>
                                     <td v-if="activeDbNode != 'Node3'" class="fw-bold text-dark">{{ log.ec }} uS/cm</td>
                                 </tr>
                                 <tr v-if="logs[activeDbNode].length === 0"><td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">Đang kết nối luồng dữ liệu đám mây Google Sheet...</td></tr>
@@ -244,15 +244,20 @@
             initFirebase() {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
                 nodeKeys.forEach(key => {
-                    database.ref('/' + key).on('value', (snapshot) => {
-                        const val = snapshot.val();
-                        if (val) {
-                            this.nodes[key].air_temperature = Number(val.air_temperature) || 0;
-                            this.nodes[key].air_humidity = Number(val.air_humidity) || 0;
-                            if (key !== 'Node3') {
-                                this.nodes[key].soil_temperature = Number(val.soil_temperature) || 0;
-                                this.nodes[key].soil_humidity = Number(val.soil_humidity) || 0;
-                                this.nodes[key].soil_ec = Number(val.soil_ec) || 0;
+                    // ĐỌC LUỒNG MỚI NHẤT TRONG HISTORY TRÁNH TRỐNG SỐ LIỆU DO LỆCH TÊN BIẾN GỐC
+                    database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
+                        const historyData = snapshot.val();
+                        if (historyData) {
+                            const dataValues = Object.values(historyData);
+                            const val = dataValues[dataValues.length - 1]; 
+                            if (val) {
+                                this.nodes[key].air_temperature = Number(val.air_temperature) || 0;
+                                this.nodes[key].air_humidity = Number(val.air_humidity) || 0;
+                                if (key !== 'Node3') {
+                                    this.nodes[key].soil_temperature = Number(val.soil_temperature) || 0;
+                                    this.nodes[key].soil_humidity = Number(val.soil_humidity) || 0;
+                                    this.nodes[key].soil_ec = Number(val.soil_ec) || 0;
+                                }
                             }
                         }
                     });
@@ -260,7 +265,7 @@
                 this.fetchDataFromGoogleSheet();
             },
 
-            // 🚀 CẢI TIẾN CHÍNH XÁC: THUẬT TOÁN DÒ TÌM INDEX CỘT TỰ ĐỘNG CHỐNG LỆCH HÀNG GOOGLE SHEET
+            // 🚀 KHẮC PHỤC LỖI TOÀN DIỆN: CHUẨN HÓA ĐỐI CHIẾU CHỮ HOA/THƯỜNG XÓA KHOẢNG TRẮNG CỦA FILE EXCEL TỰ ĐỘNG
             fetchDataFromGoogleSheet() {
                 fetch(googleSheetCSVUrl)
                     .then(response => response.text())
@@ -268,17 +273,17 @@
                         const lines = csvText.split("\n");
                         if (lines.length < 2) return;
 
-                        // Bóc tách dòng đầu tiên (Header) để tìm chỉ số cột chính xác
-                        const headers = lines[0].split(",").map(h => h.replace(/"/g, "").trim().toLowerCase());
+                        // Chuyển toàn bộ Header về chữ thường và xóa khoảng trắng ngầm chống lỗi định dạng Excel
+                        const headers = lines[0].split(",").map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                         
-                        // Tìm vị trí index dựa vào từ khóa cột
+                        // Định vị vị trí cột thông minh linh hoạt
                         const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
                         const idxTram = headers.findIndex(h => h.includes("tram") || h.includes("node"));
-                        const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("khi"));
-                        const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("khi"));
-                        const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("dat"));
-                        const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("dat"));
-                        const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("dan_dien"));
+                        const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("air_temperature") || h.includes("khi"));
+                        const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("air_humidity") || h.includes("khi"));
+                        const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("soil_temperature") || h.includes("dat"));
+                        const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("soil_humidity") || h.includes("dat"));
+                        const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec") || h.includes("dan_dien"));
 
                         const nodeData = { Node1: [], Node2: [], Node3: [] };
 
@@ -286,9 +291,13 @@
                             if (!lines[i].trim()) continue;
                             const cols = lines[i].split(",");
 
-                            // Dùng vị trí index động đã dò được ở trên để map dữ liệu chuẩn 100%
                             const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
-                            const tramStr = idxTram !== -1 && cols[idxTram] ? cols[idxTram].replace(/"/g, "").trim() : "Node1";
+                            let tramStr = idxTram !== -1 && cols[idxTram] ? cols[idxTram].replace(/"/g, "").replace(/\s+/g, "").trim() : "Node1";
+                            
+                            // Chuẩn hóa tên trạm (ví dụ: "node1" -> "Node1") để đưa vào đúng mảng đích
+                            if (tramStr.toLowerCase() === "node1") tramStr = "Node1";
+                            if (tramStr.toLowerCase() === "node2") tramStr = "Node2";
+                            if (tramStr.toLowerCase() === "node3") tramStr = "Node3";
 
                             if (nodeData[tramStr]) {
                                 nodeData[tramStr].push({
@@ -310,10 +319,9 @@
                         this.allSheetData = nodeData;
                         if (this.currentTab === 'charts') { this.renderChart(); }
                     })
-                    .catch(err => console.error("Lỗi kết nối hoặc đồng bộ dữ liệu: ", err));
+                    .catch(err => console.error("Lỗi đồng bộ Google Sheet: ", err));
             },
 
-            // 🚀 TRÍCH XUẤT SHEET CHÍNH XÁC DỰA TRÊN INDEX CỘT ĐỘNG THEO NGÀY CHỌN
             exportCSVFromGoogleSheet() {
                 const selectedNode = this.activeDbNode;
                 const chosenDate = this.filterDate; 
@@ -326,14 +334,14 @@
                         const lines = csvText.split("\n");
                         if (lines.length < 2) return;
 
-                        const headers = lines[0].split(",").map(h => h.replace(/"/g, "").trim().toLowerCase());
+                        const headers = lines[0].split(",").map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                         const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
                         const idxTram = headers.findIndex(h => h.includes("tram") || h.includes("node"));
-                        const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp"));
-                        const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum"));
-                        const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp"));
-                        const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum"));
-                        const idxEc = headers.findIndex(h => h.includes("ec"));
+                        const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("air_temperature"));
+                        const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("air_humidity"));
+                        const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("soil_temperature"));
+                        const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("soil_humidity"));
+                        const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec"));
 
                         let csvContent = "\uFEFFsep=,\n"; 
                         csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
@@ -344,7 +352,11 @@
                             const cols = lines[i].split(",");
 
                             const timeStr = idxTime !== -1 && cols[idxTime] ? cols[idxTime].replace(/"/g, "").trim() : "";
-                            const tramStr = idxTram !== -1 && cols[idxTram] ? cols[idxTram].replace(/"/g, "").trim() : "";
+                            let tramStr = idxTram !== -1 && cols[idxTram] ? cols[idxTram].replace(/"/g, "").replace(/\s+/g, "").trim() : "";
+
+                            if (tramStr.toLowerCase() === "node1") tramStr = "Node1";
+                            if (tramStr.toLowerCase() === "node2") tramStr = "Node2";
+                            if (tramStr.toLowerCase() === "node3") tramStr = "Node3";
 
                             if (tramStr === selectedNode && timeStr.includes(formattedDateCheck)) {
                                 const airT = idxAirT !== -1 ? Number(cols[idxAirT]).toFixed(1) : "0.0";
@@ -371,6 +383,12 @@
                         link.click();
                         document.body.removeChild(link);
                     });
+            },
+
+            formatNumber(val) {
+                if (val === undefined || val === null) return "0.0";
+                const num = Number(val);
+                return isNaN(num) ? "0.0" : num.toFixed(1);
             },
 
             renderChart() {
