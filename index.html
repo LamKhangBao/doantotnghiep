@@ -275,19 +275,14 @@
                 return line.split(",");
             },
 
-            // 🚀 GIẢI PHÁP ĐỘT PHÁ: SỬ DỤNG REGEX ĐỂ BÓC TÁCH RIÊNG SỐ, KHỬ SẠCH ĐƠN VỊ °C HOẶC % GÂY NaN LỖI
             cleanNum(val) {
                 if (val === undefined || val === null || String(val).trim() === "") return 0;
-                
-                // Thay dấu phẩy tiếng Việt thành dấu chấm thập phân chuẩn quốc tế
                 let str = String(val).replace(/"/g, "").replace(",", ".").trim();
-                
-                // Khử sạch toàn bộ các ký tự chữ, khoảng trắng và đơn vị (°C, %, uS/cm) chỉ giữ lại số và dấu chấm
                 let match = str.match(/[-+]?[0-9]*\.?[0-9]+/);
-                
                 return match ? (parseFloat(match[0]) || 0) : 0;
             },
 
+            // 🚀 BẢN SỬA LỖI LỚN: TÍNH TOÁN MAP HỆ TIẾNG VIỆT CÓ DẤU TRÙNG KHỚP 100% VỚI ẢNH CỦA HAI BẠN
             fetchAllGoogleSheets() {
                 const keys = ['Node1', 'Node2', 'Node3'];
                 const promises = keys.map(key => {
@@ -297,14 +292,15 @@
                             const lines = csvText.split("\n");
                             if (lines.length < 2) return [];
 
+                            // Đổi về chữ thường chuẩn hóa chữ có dấu tiếng Việt, khử ngoặc đơn
                             const headers = this.splitCSVLine(lines[0]).map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                             
                             const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
-                            const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("temperature") || h.includes("khi"));
-                            const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("humidity") || h.includes("khi"));
-                            const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("dat"));
-                            const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("dat"));
-                            const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec") || h.includes("dan_dien"));
+                            const idxAirT = headers.findIndex(h => h.includes("nhiệtđộkhí") || h.includes("nhietdo") || h.includes("air_temp"));
+                            const idxAirH = headers.findIndex(h => h.includes("độẩmkhí") || h.includes("doam") || h.includes("air_hum"));
+                            const idxSoilT = headers.findIndex(h => h.includes("nhiệtđộđất") || h.includes("soil_temp"));
+                            const idxSoilH = headers.findIndex(h => h.includes("độẩmđất") || h.includes("soil_hum"));
+                            const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec") || h.includes("dẫnđiện"));
 
                             const currentLogs = [];
                             for (let i = 1; i < lines.length; i++) {
@@ -357,11 +353,11 @@
 
                         const headers = this.splitCSVLine(lines[0]).map(h => h.replace(/"/g, "").replace(/\s+/g, "").trim().toLowerCase());
                         const idxTime = headers.findIndex(h => h.includes("gian") || h.includes("time"));
-                        const idxAirT = headers.findIndex(h => h.includes("nhietdokhi") || h.includes("air_temp") || h.includes("air_temperature"));
-                        const idxAirH = headers.findIndex(h => h.includes("doamkhi") || h.includes("air_hum") || h.includes("air_humidity"));
-                        const idxSoilT = headers.findIndex(h => h.includes("nhietdodat") || h.includes("soil_temp") || h.includes("soil_temperature"));
-                        const idxSoilH = headers.findIndex(h => h.includes("doamdat") || h.includes("soil_hum") || h.includes("soil_humidity"));
-                        const idxEc = headers.findIndex(h => h.includes("ec") || h.includes("soil_ec"));
+                        const idxAirT = headers.findIndex(h => h.includes("nhiệtđộkhí") || h.includes("air_temp"));
+                        const idxAirH = headers.findIndex(h => h.includes("độẩmkhí") || h.includes("air_hum"));
+                        const idxSoilT = headers.findIndex(h => h.includes("nhiệtđộđất") || h.includes("soil_temp"));
+                        const idxSoilH = headers.findIndex(h => h.includes("độẩmđất") || h.includes("soil_hum"));
+                        const idxEc = headers.findIndex(h => h.includes("ec"));
 
                         let csvContent = "\uFEFFsep=,\n"; 
                         csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
