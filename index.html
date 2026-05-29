@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Smart Greenhouse AI | Đồ Án Tốt Nghiệp</title>
+    <title>Hệ Thống Smart Greenhouse AI | Đồ Án Tốt Nghiệp Nhóm 9</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -11,7 +11,7 @@
     
     <style>
         :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; margin: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f7fe; color: #1e293b; overflow-x: hidden; }
 
         /* Login Design Nông Lâm */
         #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
@@ -36,9 +36,6 @@
         .node-selector-btn { padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; background: white; color: #475569; transition: 0.2s; }
         .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(5,150,105,0.2); }
 
-        .filter-input { padding: 8px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px; color: #475569; font-weight: 600; background: #f8fafc; outline: none; }
-        .filter-input:focus { border-color: var(--primary); background: white; }
-
         canvas { width: 100% !important; height: 380px !important; }
         [v-cloak] { display: none; }
     </style>
@@ -51,21 +48,21 @@
         <div class="login-card text-center">
             <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-4" style="max-height: 100px;">
             <h5 class="fw-800 mb-1 text-dark">TRƯỜNG ĐẠI HỌC NÔNG LÂM</h5>
-            <p class="text-muted small mb-4">Hệ Thống Giám Sát Điều Phối Nhà Màng</p>
+            <p class="text-muted small mb-4">Hệ Thống Giám Sát Điều Phối Nhà Màng | Nhóm 9</p>
             
             <div class="mb-3 text-start">
                 <label class="form-label small fw-600 text-secondary">Tài khoản quản trị</label>
-                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tên đăng nhập của bạn...">
+                <input type="text" v-model="loginForm.user" class="form-control" placeholder="Nhập tài khoản...">
             </div>
             <div class="mb-4 text-start">
                 <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
                 <div class="password-wrapper">
-                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mã số sinh viên..." @keyup.enter="handleLogin">
+                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu..." @keyup.enter="handleLogin">
                     <i class="fa-solid password-toggle" :class="passwordFieldType === 'password' ? 'fa-eye-slash' : 'fa-eye'" @click="togglePasswordVisibility"></i>
                 </div>
             </div>
             <button @click="handleLogin" class="btn btn-success w-100 py-2.5 fw-bold shadow-sm" style="border-radius:12px; background: var(--primary);">ĐĂNG NHẬP HỆ THỐNG</button>
-            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai thông tin tài khoản hoặc MSSV!</p>
+            <p v-if="loginError" class="text-danger mt-3 small fw-500"><i class="fa-solid fa-circle-exclamation me-1"></i> Sai tài khoản hoặc mật khẩu bạng ơi!</p>
         </div>
     </div>
 
@@ -73,20 +70,14 @@
         <nav id="sidebar">
             <div class="brand-zone text-center">
                 <img src="https://hcmuaf.edu.vn/images/logo.png" alt="Logo Nông Lâm" class="img-fluid mb-2" style="max-height: 50px; filter: brightness(0) invert(1);">
-                <h5 class="fw-800 mb-0 text-white" style="letter-spacing: 0.5px;">Greenhouse</h5>
+                <h6 class="fw-800 mb-0 text-white">GREENHOUSE AI</h6>
             </div>
             <div class="mt-4">
                 <a href="#" @click="currentTab = 'realtime'" class="nav-link" :class="{active: currentTab == 'realtime'}"><i class="fa-solid fa-chart-pie"></i> Mục 1: Thông số Realtime</a>
                 <a href="#" @click="currentTab = 'database'" class="nav-link" :class="{active: currentTab == 'database'}"><i class="fa-solid fa-table"></i> Mục 2: Cơ sở dữ liệu bảng</a>
                 <a href="#" @click="currentTab = 'charts'" class="nav-link" :class="{active: currentTab == 'charts'}"><i class="fa-solid fa-chart-line"></i> Mục 3: Biểu đồ xu hướng</a>
-                
                 <hr class="mx-4 opacity-10">
-                
-                <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
-                    Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051
-                </div>
-                
+                <div class="px-4 py-2 text-emerald-200 small" style="font-style: italic;">Đại Học Nông Lâm - Nhóm 9</div>
                 <a href="#" @click="logout" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</a>
             </div>
         </nav>
@@ -128,14 +119,9 @@
                             <button @click="activeDbNode = 'Node2'" class="node-selector-btn" :class="{active: activeDbNode == 'Node2'}">Trạm 02 (Trong nhà)</button>
                             <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">Trạm 03 (Ngoài nhà màng)</button>
                         </div>
-                        
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="small fw-bold text-secondary"><i class="fa-regular fa-calendar-days me-1"></i> Lọc ngày báo cáo:</span>
-                            <input type="date" v-model="filterDate" class="filter-input">
-                            <button @click="exportCSVForCurrentNode" class="btn btn-success fw-bold d-flex align-items-center gap-2" style="border-radius:12px; background: var(--primary);">
-                                <i class="fa-solid fa-file-excel"></i> Xuất Nhật Ký (.CSV)
-                            </button>
-                        </div>
+                        <button @click="exportCSVForCurrentNode" class="btn btn-outline-success fw-bold d-flex align-items-center gap-2" style="border-radius:10px;">
+                            <i class="fa-solid fa-file-excel"></i> Xuất File Nhật Ký (.CSV) của {{ activeDbNode }}
+                        </button>
                     </div>
 
                     <div class="table-responsive">
@@ -199,7 +185,6 @@
             const loginForm = reactive({ user: '', pass: '' });
             const loginError = ref(false);
             const passwordFieldType = ref('password'); 
-            const filterDate = ref(new Date().toISOString().split('T')[0]); 
             let chartInstance = null;
 
             const nodes = reactive({
@@ -222,21 +207,38 @@
                 passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
             };
 
-            const handleLogin = () => {
-                const username = loginForm.user.trim().toLowerCase();
-                const password = loginForm.pass.trim();
+            const exportCSVForCurrentNode = () => {
+                const targetLogs = logs[activeDbNode.value];
+                if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
+                
+                let csvContent = "\uFEFF"; 
+                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
+                
+                targetLogs.forEach(item => {
+                    csvContent += `${item.time},${item.airT},${item.airH},${item.soilT},${item.soilH},${item.ec}\n`;
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const dateStr = new Date().toLocaleDateString().replace(/\//g, "-");
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute("download", `NhatKy_DuLieu_${activeDbNode.value}_Ngay_${dateStr}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
 
-                if ((username === 'baokhang' && password === '22138043') || 
-                    (username === 'thekiet' && password === '22138051')) { 
+            const handleLogin = () => {
+                // Sửa logic so khớp chuỗi chuẩn xác độc lập
+                if (loginForm.user.trim() === 'doantotnghiep' && loginForm.pass === '12345678') { 
                     isLoggedIn.value = true; 
-                    loginError.value = false;
                     initFirebase(); 
                 } else { 
                     loginError.value = true; 
                 }
             };
 
-            const logout = () => { isLoggedIn.value = false; loginForm.user = ''; loginForm.pass = ''; };
+            const logout = () => { isLoggedIn.value = false; loginForm.pass = ''; };
 
             const initFirebase = () => {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
@@ -254,6 +256,7 @@
                         }
                     });
 
+                    // Làm sạch mảng trước khi nạp để tránh lặp dữ liệu kẹt
                     logs[key] = [];
                     database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
                         const logItem = snapshot.val();
@@ -269,30 +272,6 @@
                         }
                     });
                 });
-            };
-
-            const exportCSVForCurrentNode = () => {
-                const targetLogs = logs[activeDbNode.value];
-                if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
-                
-                const rawDate = filterDate.value.split('-');
-                const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
-
-                let csvContent = "\uFEFF"; 
-                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
-                
-                targetLogs.forEach(item => {
-                    const fullTimeField = formattedDate + " " + item.time;
-                    csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
-                });
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.setAttribute("download", "NhatKy_" + activeDbNode.value + "_Ngay_" + filterDate.value + ".csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             };
 
             const renderChart = () => {
@@ -311,7 +290,7 @@
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'soil_temp') {
                         datasets = [
@@ -342,7 +321,7 @@
 
             watch(activeChartType, () => { if (currentTab.value === 'charts') renderChart(); });
 
-            return { isLoggedIn, currentTab, activeDbNode, activeChartType, chartNameDisplay, tabTitle, loginForm, loginError, passwordFieldType, filterDate, togglePasswordVisibility, exportCSVForCurrentNode, nodes, logs };
+            return { isLoggedIn, currentTab, activeDbNode, activeChartType, chartNameDisplay, tabTitle, loginForm, loginError, passwordFieldType, togglePasswordVisibility, exportCSVForCurrentNode, nodes, logs };
         }
     }).mount('#app');
 </script>
