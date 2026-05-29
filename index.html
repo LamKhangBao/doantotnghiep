@@ -83,7 +83,7 @@
                 
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051
+                    Phạm Thế Kiệt : 22138051<br>
                 </div>
                 
                 <div onclick="logout()" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</div>
@@ -249,7 +249,6 @@
         renderTableData();
     }
 
-    // Chuyển đổi nút Đồ thị mục 3
     function switchChartType(chartType) {
         activeChartType = chartType;
         document.querySelectorAll('#content-charts .node-selector-btn').forEach(b => b.classList.remove('active'));
@@ -266,17 +265,21 @@
         renderChartGraphics();
     }
 
+    // 🚀 THUẬT TOÁN ĐỒNG BỘ ĐÃ ĐƯỢC CHUẨN HÓA SỬA LỖI TRÍCH XUẤT CẤP OBJECT LỒNG
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
+            // Lắng nghe nhánh lịch sử và giải nén Object lồng từ mã khóa Push ID vĩnh viễn
             database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
-                    const lastId = Object.keys(historyData)[0];
-                    const val = historyData[lastId];
+                    // Trích xuất mảng giá trị bên trong Object lồng cấp
+                    const dataValues = Object.values(historyData);
+                    const val = dataValues[0]; // Bóc mốc phần tử sạch cuối cùng vừa gửi
                     
                     if (val) {
+                        // Cập nhật số liệu hiển thị thực tế lên ID màn hình
                         document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
                         document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
                         if (key !== 'Node3') {
@@ -288,6 +291,7 @@
                 }
             });
 
+            // Lắng nghe đồng bộ mảng 10 dòng
             database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
@@ -387,7 +391,6 @@
         globalChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
     }
 
-    // 🔥 THUẬT TOÁN ĐÃ ĐƯỢC CHỈNH SỬA: ÉP EXCEL TỰ ĐỘNG CHIA CỘT RÕ RÀNG BẰNG LỆNH "sep=,"
     function exportCSVForCurrentNode() {
         const targetLogs = logs[activeDbNode];
         if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
@@ -398,12 +401,11 @@
         const rawDate = filterDateVal.split('-');
         const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
 
-        // Thêm \uFEFF để giữ font tiếng Việt và chèn "sep=,\n" lên đầu để ra lệnh cho Excel tự động phân chia hàng/cột ngay ngắn
         let csvContent = "\uFEFFsep=,\n"; 
         csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
         
         targetLogs.forEach(item => {
-            const fullTimeField = formattedDate + " " + item.time;
+            const fullTimeField = formattedDate + " " + filterTimeVal;
             csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
         });
         
