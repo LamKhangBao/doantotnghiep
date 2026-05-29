@@ -18,7 +18,7 @@
         .login-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); width: 100%; max-width: 420px; }
         
         .password-wrapper { position: relative; }
-        .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; }
+        .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; z-index: 10; }
 
         /* Sidebar & Layout */
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
@@ -36,6 +36,7 @@
         .node-selector-btn { padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; background: white; color: #475569; transition: 0.2s; }
         .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(5,150,105,0.2); }
 
+        canvas { width: 100% !important; height: 380px !important; }
         [v-cloak] { display: none; }
     </style>
 </head>
@@ -56,7 +57,7 @@
             <div class="mb-4 text-start">
                 <label class="form-label small fw-600 text-secondary">Mật khẩu khóa</label>
                 <div class="password-wrapper">
-                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu...">
+                    <input :type="passwordFieldType" v-model="loginForm.pass" class="form-control" placeholder="Nhập mật khẩu..." @keyup.enter="handleLogin">
                     <i class="fa-solid password-toggle" :class="passwordFieldType === 'password' ? 'fa-eye-slash' : 'fa-eye'" @click="togglePasswordVisibility"></i>
                 </div>
             </div>
@@ -183,7 +184,7 @@
             const tabTitle = ref('Mục 1: Thông số trạm quan trắc thời gian thực');
             const loginForm = reactive({ user: '', pass: '' });
             const loginError = ref(false);
-            const passwordFieldType = ref('password'); // Quản lý hiển thị mật khẩu ẩn/hiện
+            const passwordFieldType = ref('password'); 
             let chartInstance = null;
 
             const nodes = reactive({
@@ -206,19 +207,17 @@
                 passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
             };
 
-            // THUẬT TOÁN XUẤT FILE CSV CHUYÊN NGHIỆP: Tự bốc dữ liệu sạch, đặt tên kèm ngày giờ thực tế
             const exportCSVForCurrentNode = () => {
                 const targetLogs = logs[activeDbNode.value];
                 if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
                 
-                let csvContent = "\uFEFF"; // Thêm BOM UTF-8 để Excel mở không bị lỗi font tiếng Việt
-                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; // Tiêu đề cột
+                let csvContent = "\uFEFF"; 
+                csvContent += "Moc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
                 
                 targetLogs.forEach(item => {
                     csvContent += `${item.time},${item.airT},${item.airH},${item.soilT},${item.soilH},${item.ec}\n`;
                 });
                 
-                // Kích hoạt luồng tải tệp tin ngầm từ trình duyệt xuống ổ cứng máy tính
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a");
                 const dateStr = new Date().toLocaleDateString().replace(/\//g, "-");
@@ -230,11 +229,16 @@
             };
 
             const handleLogin = () => {
-                if (loginForm.user === 'doantotnghiep' && loginForm.pass === '12345678') { isLoggedIn.value = true; initFirebase(); } 
-                else { loginError.value = true; }
+                // Sửa logic so khớp chuỗi chuẩn xác độc lập
+                if (loginForm.user.trim() === 'doantotnghiep' && loginForm.pass === '12345678') { 
+                    isLoggedIn.value = true; 
+                    initFirebase(); 
+                } else { 
+                    loginError.value = true; 
+                }
             };
 
-            const logout = () => { isLoggedIn.value = false; };
+            const logout = () => { isLoggedIn.value = false; loginForm.pass = ''; };
 
             const initFirebase = () => {
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
@@ -252,12 +256,13 @@
                         }
                     });
 
-                    // Lắng nghe luồng dữ liệu liên tục lưu cứng 10 mốc
+                    // Làm sạch mảng trước khi nạp để tránh lặp dữ liệu kẹt
+                    logs[key] = [];
                     database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
                         const logItem = snapshot.val();
                         if (logItem) {
                             logs[key].push({
-                                time: String(logItem.time_log || "").replace(/"/g, ""), // Xóa ngoặc kép kẹt
+                                time: String(logItem.time_log || "").replace(/"/g, ""), 
                                 airT: Number(logItem.air_temperature) || 0, airH: Number(logItem.air_humidity) || 0,
                                 soilT: Number(logItem.soil_temperature) || 0, soilH: Number(logItem.soil_humidity) || 0,
                                 ec: Number(logItem.soil_ec) || 0
@@ -279,13 +284,13 @@
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'air_hum') {
                         datasets = [
                             { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
                             { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.02)', fill: true, tension: 0.25, borderWidth: 3 },
-                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.02)', fill: true, tension: 0.25, borderWidth: 3 }
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.02)', fill: true, tension: 0.25, borderWidth: 3 }
                         ];
                     } else if (activeChartType.value === 'soil_temp') {
                         datasets = [
