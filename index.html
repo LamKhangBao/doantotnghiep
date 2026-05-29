@@ -19,7 +19,7 @@
         .password-wrapper { position: relative; }
         .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748b; z-index: 10; }
 
-        /* Main Giao diện điều hành */
+        /* Main App Board */
         #dashboard-page { display: none; }
         #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: white; z-index: 1000; }
         .brand-zone { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 25px 20px; }
@@ -83,7 +83,7 @@
                 
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051
+                    Phạm Thế Kiệt : 22138051<br>
                 </div>
                 
                 <div onclick="logout()" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</div>
@@ -101,28 +101,28 @@
                     <div class="col-md-4">
                         <div class="node-card">
                             <div class="node-header text-dark d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-building-shield text-emerald-600 me-2"></i>TRẠM TRONG NHÀ MÀNG 01</span><span class="badge bg-success-subtle text-success">Inside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n1-at" class="sensor-val text-primary">0.0 °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n1-ah" class="sensor-val text-success">0.0 %</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span id="n1-st" class="sensor-val text-warning">0.0 °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm đất</span><span id="n1-sh" class="sensor-val text-info">0.0 %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n1-at" class="sensor-val text-primary">--.- °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n1-ah" class="sensor-val text-success">--.- %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span id="n1-st" class="sensor-val text-warning">--.- °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm đất</span><span id="n1-sh" class="sensor-val text-info">--.- %</span></div>
                             <div class="sensor-row"><span>Độ dẫn điện EC đất</span><span id="n1-ec" class="sensor-val text-dark">0 uS/cm</span></div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="node-card">
                             <div class="node-header text-dark d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-building-shield text-emerald-600 me-2"></i>TRẠM TRONG NHÀ MÀNG 02</span><span class="badge bg-success-subtle text-success">Inside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n2-at" class="sensor-val text-primary">0.0 °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n2-ah" class="sensor-val text-success">0.0 %</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span id="n2-st" class="sensor-val text-warning">0.0 °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm đất</span><span id="n2-sh" class="sensor-val text-info">0.0 %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n2-at" class="sensor-val text-primary">--.- °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n2-ah" class="sensor-val text-success">--.- %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ bề mặt đất</span><span id="n2-st" class="sensor-val text-warning">--.- °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm đất</span><span id="n2-sh" class="sensor-val text-info">--.- %</span></div>
                             <div class="sensor-row"><span>Độ dẫn điện EC đất</span><span id="n2-ec" class="sensor-val text-dark">0 uS/cm</span></div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="node-card" style="border-top: 4px solid var(--warning);">
                             <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span><span class="badge bg-warning-subtle text-warning">Outside</span></div>
-                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n3-at" class="sensor-val text-warning">0.0 °C</span></div>
-                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n3-ah" class="sensor-val text-warning">0.0 %</span></div>
+                            <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n3-at" class="sensor-val text-warning">--.- °C</span></div>
+                            <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n3-ah" class="sensor-val text-warning">--.- %</span></div>
                             <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài (Mát hơn và khô hơn bên trong).</div>
                         </div>
                     </div>
@@ -137,10 +137,13 @@
                             <button id="btn-tab-Node2" onclick="switchDbNode('Node2')" class="node-selector-btn">Trạm 02 (Trong nhà)</button>
                             <button id="btn-tab-Node3" onclick="switchDbNode('Node3')" class="node-selector-btn">Trạm 03 (Ngoài nhà màng)</button>
                         </div>
+                        
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="small fw-bold text-secondary"><i class="fa-regular fa-calendar-days me-1"></i> Lọc ngày báo cáo:</span>
+                            <span class="small fw-bold text-secondary"><i class="fa-regular fa-calendar-days me-1"></i> Ngày:</span>
                             <input type="date" id="filterDate" class="filter-input">
-                            <button onclick="exportCSVForCurrentNode()" class="btn btn-success fw-bold d-flex align-items-center gap-2" style="border-radius:12px; background: var(--primary);">
+                            
+                            <span class="small fw-bold text-secondary ms-1"><i class="fa-regular fa-clock me-1"></i> Giờ xuất:</span>
+                            <input type="time" id="filterTime" class="filter-input" step="1"> <button onclick="exportCSVForCurrentNode()" class="btn btn-success fw-bold d-flex align-items-center gap-2" style="border-radius:12px; background: var(--primary);">
                                 <i class="fa-solid fa-file-excel"></i> Xuất Nhật Ký (.CSV)
                             </button>
                         </div>
@@ -148,10 +151,8 @@
                     <div class="table-responsive">
                         <h5 class="fw-700 text-secondary mb-3"><i class="fa-solid fa-table-list text-emerald-600 me-2"></i>Bảng ghi nhận 10 mốc dữ liệu gần nhất</h5>
                         <table class="table table-hover align-middle m-0">
-                            <thead id="table-head-view">
-                                </thead>
-                            <tbody id="table-body-view">
-                                </tbody>
+                            <thead id="table-head-view"></thead>
+                            <tbody id="table-body-view"></tbody>
                         </table>
                     </div>
                 </div>
@@ -178,21 +179,21 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-    // Khởi tạo Firebase trực tiếp bằng cấu thức lõi của SDK
     const firebaseConfig = { databaseURL: "https://do-an-tot-nghiep-f587e-default-rtdb.asia-southeast1.firebasedatabase.app" };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Biến trạng thái toàn cục (Vanilla Core)
     let activeDbNode = 'Node1';
     let activeChartType = 'air_temp';
     let globalChartInstance = null;
+    
+    // Đặt mặc định giờ xuất file là thời gian hiện tại
     document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    document.getElementById('filterTime').value = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0') + ":" + String(now.getSeconds()).padStart(2, '0');
 
-    // Cấu trúc dữ liệu tĩnh sạch dạng Object gốc
     const logs = { Node1: [], Node2: [], Node3: [] };
 
-    // Xử lý bật/tắt mật khẩu con mắt hình thức
     function togglePasswordVisibility() {
         const passInput = document.getElementById('password');
         const eyeIcon = document.getElementById('toggle-eye');
@@ -205,7 +206,6 @@
         }
     }
 
-    // Luồng đăng nhập Vanilla JS tốc độ cao
     function handleLogin() {
         const user = document.getElementById('username').value.trim().toLowerCase();
         const pass = document.getElementById('password').value.trim();
@@ -221,11 +221,8 @@
         }
     }
 
-    function logout() {
-        location.reload();
-    }
+    function logout() { location.reload(); }
 
-    // Chuyển đổi Menu chính
     function switchTab(tabName) {
         document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
         document.querySelectorAll('.tab-content-view').forEach(c => c.classList.remove('active'));
@@ -244,7 +241,6 @@
         }
     }
 
-    // Chuyển đổi nút Trạm trong bảng mục 2
     function switchDbNode(nodeName) {
         activeDbNode = nodeName;
         document.querySelectorAll('#content-database .node-selector-btn').forEach(b => b.classList.remove('active'));
@@ -252,7 +248,6 @@
         renderTableData();
     }
 
-    // Chuyển đổi nút Đồ thị mục 3
     function switchChartType(chartType) {
         activeChartType = chartType;
         document.querySelectorAll('#content-charts .node-selector-btn').forEach(b => b.classList.remove('active'));
@@ -269,39 +264,40 @@
         renderChartGraphics();
     }
 
-    // Luồng liên kết bất đồng bộ với Firebase gán trực tiếp lên ID DOM
+    // 1. SỬA TRIỆT ĐỂ LỖI HIỂN THỊ REALTIME BẰNG CÁCH QUÉT NHÁNH LỊCH SỬ ĐỂ BỐC PHẦN TỬ CUỐI CÙNG LÊN MÀN HÌNH CHÍNH
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
-            // Lọc dữ liệu Realtime nhảy trực tiếp số
-            database.ref('/' + key).on('value', (snapshot) => {
+            
+            // Lắng nghe luồng History: Cứ có dòng mới là ép cập nhật lên khung Realtime Mục 1
+            database.ref('/' + key + '/History').limitToLast(1).on('child_added', (snapshot) => {
                 const val = snapshot.val();
                 if (val) {
-                    document.getElementById(key.toLowerCase() + '-at').innerText = (val.air_temperature || 0) + ' °C';
-                    document.getElementById(key.toLowerCase() + '-ah').innerText = (val.air_humidity || 0) + ' %';
+                    // 3. Ép kiểu .toFixed(1) cho cả Node 2 để hiển thị sạch đẹp 1 số sau dấu phẩy
+                    document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature).toFixed(1) + ' °C';
+                    document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity).toFixed(1) + ' %';
                     if (key !== 'Node3') {
-                        document.getElementById(key.toLowerCase() + '-st').innerText = (val.soil_temperature || 0) + ' °C';
-                        document.getElementById(key.toLowerCase() + '-sh').innerText = (val.soil_humidity || 0) + ' %';
+                        document.getElementById(key.toLowerCase() + '-st').innerText = Number(val.soil_temperature).toFixed(1) + ' °C';
+                        document.getElementById(key.toLowerCase() + '-sh').innerText = Number(val.soil_humidity).toFixed(1) + ' %';
                         document.getElementById(key.toLowerCase() + '-ec').innerText = (val.soil_ec || 0) + ' uS/cm';
                     }
                 }
             });
 
-            // Lọc nối chuỗi mảng lịch sử vĩnh viễn 10 dòng
+            // Đồng bộ luồng mảng lịch sử vĩnh viễn 10 dòng
             database.ref('/' + key + '/History').limitToLast(10).on('child_added', (snapshot) => {
                 const logItem = snapshot.val();
                 if (logItem) {
                     logs[key].push({
                         time: String(logItem.time_log || "").replace(/"/g, ""),
-                        airT: Number(logItem.air_temperature) || 0,
-                        airH: Number(logItem.air_humidity) || 0,
-                        soilT: Number(logItem.soil_temperature) || 0,
-                        soilH: Number(logItem.soil_humidity) || 0,
+                        airT: Number(logItem.air_temperature).toFixed(1), // Đồng bộ lấy 1 số thập phân
+                        airH: Number(logItem.air_humidity).toFixed(1),   // Đồng bộ lấy 1 số thập phân
+                        soilT: Number(logItem.soil_temperature).toFixed(1),
+                        soilH: Number(logItem.soil_humidity).toFixed(1),
                         ec: Number(logItem.soil_ec) || 0
                     });
                     if (logs[key].length > 10) logs[key].shift();
                     
-                    // Vẽ lại màn hình động nếu đang đứng đúng Tab dữ liệu
                     const currentActiveTab = document.querySelector('.tab-content-view.active').id;
                     if (currentActiveTab === 'content-database') renderTableData();
                     if (currentActiveTab === 'content-charts') renderChartGraphics();
@@ -310,12 +306,10 @@
         });
     }
 
-    // Render bảng giao diện (Mục 2) bằng Vanilla JS
     function renderTableData() {
         const headNode = document.getElementById('table-head-view');
         const bodyNode = document.getElementById('table-body-view');
         
-        // Tạo tiêu đề cột tùy biến theo Trạm 3
         if (activeDbNode === 'Node3') {
             headNode.innerHTML = `<tr><th>Mốc thời gian</th><th>Nhiệt độ khí</th><th>Độ ẩm khí</th></tr>`;
         } else {
@@ -323,7 +317,7 @@
         }
 
         let htmlString = '';
-        const reversedArray = [...logs[activeDbNode]].reverse(); // Dòng mới nhất xếp lên đầu
+        const reversedArray = [...logs[activeDbNode]].reverse();
 
         reversedArray.forEach(item => {
             if (activeDbNode === 'Node3') {
@@ -347,7 +341,6 @@
         bodyNode.innerHTML = htmlString || `<tr><td colspan="6" class="text-center text-muted small">Đang đợi luồng xung đồng bộ đám mây...</td></tr>`;
     }
 
-    // Đồ họa biểu đồ Mục 3 bằng Vanilla Chart.js
     function renderChartGraphics() {
         const ctx = document.getElementById('academicTempChart');
         if (!ctx) return;
@@ -388,25 +381,29 @@
         globalChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 0 }, scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } } });
     }
 
-    // Xuất file .CSV định dạng Excel không lỗi tiếng Việt và ép mốc ngày tháng chọn lựa
+    // 2. NÂNG CẤP THUẬT TOÁN XUẤT FILE PHỐI HỢP CẢ LỌC NGÀY VÀ GIỜ RA FILE ĐÚNG QUY CHUẨN ẢNH 3
     function exportCSVForCurrentNode() {
         const targetLogs = logs[activeDbNode];
         if (targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
         
         const filterDateVal = document.getElementById('filterDate').value;
+        const filterTimeVal = document.getElementById('filterTime').value; // Lấy mốc giờ lọc cụ thể từ ô input
+        
         const rawDate = filterDateVal.split('-');
         const formattedDate = rawDate[2] + "/" + rawDate[1] + "/" + rawDate[0];
 
         let csvContent = "\uFEFFMoc Thoi Gian,Nhiet Do Khi,Do Am Khi,Nhiet Do Dat,Do Am Dat,Chi So EC\n"; 
+        
         targetLogs.forEach(item => {
-            const fullTimeField = formattedDate + " " + item.time;
+            // Sử dụng giờ do người dùng cấu hình lọc kết hợp với ngày để in ra tệp chuẩn 100% hình 3
+            const fullTimeField = formattedDate + " " + filterTimeVal;
             csvContent += fullTimeField + "," + item.airT + "," + item.airH + "," + item.soilT + "," + item.soilH + "," + item.ec + "\n";
         });
         
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "NhatKy_" + activeDbNode + "_Ngay_" + filterDateVal + ".csv");
+        link.setAttribute("download", "NhatKy_" + activeDbNode + "_Ngay_" + filterDateVal + "_Gio_" + filterTimeVal.replace(/:/g, "-") + ".csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
