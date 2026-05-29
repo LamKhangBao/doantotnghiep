@@ -1,79 +1,284 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống giám sát Nông nghiệp</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <title>Hệ Thống Giám Sát Nông Nghiệp Thông Minh | Đồ Án Tốt Nghiệp</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f6f9; text-align: center; padding: 20px; }
-        .grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 30px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 200px; }
-        h1 { color: #2c3e50; }
-        .value { font-size: 24px; font-weight: bold; color: #27ae60; margin-top: 10px; }
+        :root {
+            --primary-color: #1e3a8a; /* Navy Blue Scientific */
+            --secondary-color: #065f46; /* Emerald Green */
+            --sidebar-width: 260px;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+
+        /* Login Screen */
+        #login-page {
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        .login-card {
+            background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            width: 100%; max-width: 400px;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0;
+            background: #0f172a; color: white; transition: 0.3s; z-index: 1000;
+        }
+        .nav-link {
+            color: #94a3b8; padding: 15px 25px; display: flex; align-items: center; gap: 12px;
+            text-decoration: none; transition: 0.2s; border-radius: 0;
+        }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid #3b82f6; }
+
+        /* Main Content */
+        #main-content { margin-left: var(--sidebar-width); padding: 30px; min-height: 100vh; }
+        
+        /* Dashboard Cards */
+        .node-card {
+            background: white; border: none; border-radius: 15px; overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px;
+        }
+        .node-header { background: #f1f5f9; padding: 12px 20px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+        .sensor-item { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
+        .sensor-val { font-weight: 700; color: var(--primary-color); font-size: 1.1rem; }
+
+        /* Table & Charts */
+        .table-container { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        canvas { width: 100% !important; height: 350px !important; }
+
+        [v-cloak] { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="app">
-        <h1>HỆ THỐNG GIÁM SÁT ĐIỀU PHỐI NÔNG NGHIỆP</h1>
-        <p>Trạng thái: <span style="color: green; font-weight: bold;">Thời gian thực (Realtime)</span></p>
-
-        <div class="grid">
-            <div class="card">
-                <h3>Nhiệt độ khí</h3>
-                <div class="value">{{ sensors.air_temperature }} °C</div>
+<div id="app" v-cloak>
+    
+    <div v-if="!isLoggedIn" id="login-page">
+        <div class="login-card text-center">
+            <i class="fa-solid fa-microchip fa-3x mb-3 text-primary"></i>
+            <h3 class="fw-bold mb-4">HỆ THỐNG IOT</h3>
+            <div class="mb-3 text-start">
+                <label class="form-label">Tài khoản</label>
+                <input type="text" v-model="loginForm.user" class="form-control" placeholder="doantotnghiep">
             </div>
-            <div class="card">
-                <h3>Độ ẩm khí</h3>
-                <div class="value">{{ sensors.air_humidity }} %</div>
+            <div class="mb-4 text-start">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" v-model="loginForm.pass" class="form-control" placeholder="********">
             </div>
-            <div class="card">
-                <h3>Nhiệt độ đất</h3>
-                <div class="value">{{ sensors.soil_temperature }} °C</div>
-            </div>
-            <div class="card">
-                <h3>Độ ẩm đất</h3>
-                <div class="value">{{ sensors.soil_humidity }} %</div>
-            </div>
-            <div class="card">
-                <h3>Độ dẫn điện EC</h3>
-                <div class="value">{{ sensors.soil_ec }} uS/cm</div>
-            </div>
+            <button @click="handleLogin" class="btn btn-primary w-100 py-2 fw-bold">ĐĂNG NHẬP</button>
+            <p v-if="loginError" class="text-danger mt-3 small">Sai thông tin đăng nhập!</p>
         </div>
     </div>
 
-    <script>
-        // Cấu hình kết nối Firebase của riêng bạn
-        const firebaseConfig = {
-            databaseURL: "https://xxxxxx-rtdb.firebaseio.com/"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    <div v-else>
+        <nav id="sidebar">
+            <div class="p-4 text-center">
+                <h5 class="fw-bold mb-0">IOT DASHBOARD</h5>
+                <small class="text-muted">Academic Edition</small>
+            </div>
+            <div class="mt-4">
+                <a href="#" @click="currentTab = 'realtime'" class="nav-link" :class="{active: currentTab == 'realtime'}">
+                    <i class="fa-solid fa-gauge-high"></i> Thông số Realtime
+                </a>
+                <a href="#" @click="currentTab = 'database'" class="nav-link" :class="{active: currentTab == 'database'}">
+                    <i class="fa-solid fa-database"></i> Dữ liệu lịch sử
+                </a>
+                <a href="#" @click="currentTab = 'charts'" class="nav-link" :class="{active: currentTab == 'charts'}">
+                    <i class="fa-solid fa-chart-line"></i> Phân tích biểu đồ
+                </a>
+                <hr class="mx-4 opacity-10">
+                <a href="#" @click="logout" class="nav-link text-danger">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+            </div>
+        </nav>
 
-        const { createApp, ref, onMounted } = Vue;
+        <main id="main-content">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold">{{ tabTitle }}</h4>
+                <div class="badge bg-success py-2 px-3">Hệ thống đang hoạt động</div>
+            </header>
 
-        createApp({
-            setup() {
-                const sensors = ref({
-                    air_temperature: 0, air_humidity: 0,
-                    soil_temperature: 0, soil_humidity: 0, soil_ec: 0
-                });
+            <div v-if="currentTab == 'realtime'">
+                <div class="row">
+                    <div v-for="i in [1, 2]" class="col-md-4">
+                        <div class="node-card">
+                            <div class="node-header"><i class="fa-solid fa-broadcast-tower me-2"></i> TRẠM QUAN TRẮC 0{{i}}</div>
+                            <div class="sensor-item"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val">{{ nodes['Node'+i].air_temperature }}°C</span></div>
+                            <div class="sensor-item"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val">{{ nodes['Node'+i].air_humidity }}%</span></div>
+                            <div class="sensor-item"><span>Nhiệt độ đất</span><span class="sensor-val">{{ nodes['Node'+i].soil_temperature }}°C</span></div>
+                            <div class="sensor-item"><span>Độ ẩm đất</span><span class="sensor-val">{{ nodes['Node'+i].soil_humidity }}%</span></div>
+                            <div class="sensor-item"><span>Chỉ số EC</span><span class="sensor-val">{{ nodes['Node'+i].soil_ec }} uS/cm</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="node-card">
+                            <div class="node-header text-primary"><i class="fa-solid fa-wind me-2"></i> TRẠM QUAN TRẮC 03 (Air Only)</div>
+                            <div class="sensor-item"><span>Nhiệt độ khí (SHT20)</span><span class="sensor-val">{{ nodes.Node3.air_temperature }}°C</span></div>
+                            <div class="sensor-item"><span>Độ ẩm khí (SHT20)</span><span class="sensor-val">{{ nodes.Node3.air_humidity }}%</span></div>
+                            <div class="p-4 text-center text-muted small">Cảm biến đất không được cấu hình cho Node này.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                onMounted(() => {
-                    // Lắng nghe sự thay đổi của Node /SensorData theo thời gian thực
-                    database.ref('/SensorData').on('value', (snapshot) => {
-                        if (snapshot.val()) {
-                            sensors.value = snapshot.val();
+            <div v-if="currentTab == 'database'">
+                <div v-for="i in [1, 2, 3]" class="table-container mb-4">
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-table me-2"></i> Bảng dữ liệu Node 0{{i}}</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Nhiệt độ khí</th>
+                                    <th>Độ ẩm khí</th>
+                                    <th v-if="i != 3">Nhiệt độ đất</th>
+                                    <th v-if="i != 3">Độ ẩm đất</th>
+                                    <th v-if="i != 3">EC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="log in logs['Node'+i]">
+                                    <td>{{ log.time }}</td>
+                                    <td>{{ log.airT }}°C</td>
+                                    <td>{{ log.airH }}%</td>
+                                    <td v-if="i != 3">{{ log.soilT }}°C</td>
+                                    <td v-if="i != 3">{{ log.soilH }}%</td>
+                                    <td v-if="i != 3">{{ log.ec }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab == 'charts'">
+                <div class="row">
+                    <div class="col-md-12 mb-4">
+                        <div class="table-container">
+                            <h5 class="fw-bold mb-4">Xu hướng nhiệt độ môi trường (Node 1, 2, 3)</h5>
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+    // 1. CẤU HÌNH FIREBASE (Thay bằng của bạn)
+    const firebaseConfig = {
+        databaseURL: "https://do-an-tot-nghiep-f587e-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const { createApp, ref, reactive, onMounted, watch } = Vue;
+
+    createApp({
+        setup() {
+            const isLoggedIn = ref(false);
+            const currentTab = ref('realtime');
+            const tabTitle = ref('Dữ liệu thời gian thực');
+            const loginForm = reactive({ user: '', pass: '' });
+            const loginError = ref(false);
+
+            // Dữ liệu Realtime
+            const nodes = reactive({
+                Node1: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
+                Node2: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
+                Node3: { air_temperature: 0, air_humidity: 0 }
+            });
+
+            // Dữ liệu Lịch sử (Logs) - Bạn có thể lấy từ Node khác nếu có lưu log
+            const logs = reactive({ Node1: [], Node2: [], Node3: [] });
+
+            // Xử lý đăng nhập
+            const handleLogin = () => {
+                if (loginForm.user === 'doantotnghiep' && loginForm.pass === '12345678') {
+                    isLoggedIn.ref = true; // Fix vue ref
+                    isLoggedIn.value = true;
+                    initFirebase();
+                } else {
+                    loginError.value = true;
+                }
+            };
+
+            const logout = () => { isLoggedIn.value = false; };
+
+            // Khởi tạo kết nối Firebase
+            const initFirebase = () => {
+                const nodeKeys = ['Node1', 'Node2', 'Node3'];
+                nodeKeys.forEach(key => {
+                    database.ref('/' + key).on('value', (snapshot) => {
+                        const val = snapshot.val();
+                        if (val) {
+                            nodes[key] = val;
+                            // Giả lập thêm vào log để hiển thị bảng (Trong thực tế bạn nên đọc node History)
+                            if (logs[key].length > 10) logs[key].shift();
+                            logs[key].push({
+                                time: new Date().toLocaleTimeString(),
+                                airT: val.air_temperature, airH: val.air_humidity,
+                                soilT: val.soil_temperature || 0, soilH: val.soil_humidity || 0,
+                                ec: val.soil_ec || 0
+                            });
                         }
                     });
                 });
+            };
 
-                return { sensors };
-            }
-        }).mount('#app');
-    </script>
+            // Vẽ biểu đồ
+            const renderChart = () => {
+                const ctx = document.getElementById('tempChart');
+                if (!ctx) return;
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: logs.Node1.map(l => l.time),
+                        datasets: [
+                            { label: 'Node 1 Temp', data: logs.Node1.map(l => l.airT), borderColor: '#3b82f6', tension: 0.3 },
+                            { label: 'Node 2 Temp', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', tension: 0.3 },
+                            { label: 'Node 3 Temp', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            };
+
+            // Theo dõi thay đổi tab để cập nhật tiêu đề hoặc vẽ biểu đồ
+            watch(currentTab, (newTab) => {
+                if (newTab === 'realtime') tabTitle.value = 'Dữ liệu thời gian thực';
+                if (newTab === 'database') tabTitle.value = 'Cơ sở dữ liệu lịch sử';
+                if (newTab === 'charts') {
+                    tabTitle.value = 'Phân tích & Thống kê';
+                    setTimeout(renderChart, 300);
+                }
+            });
+
+            return {
+                isLoggedIn, currentTab, tabTitle, loginForm, loginError,
+                handleLogin, logout, nodes, logs
+            };
+        }
+    }).mount('#app');
+</script>
+
 </body>
 </html>
