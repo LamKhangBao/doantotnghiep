@@ -265,32 +265,43 @@
         renderChartGraphics();
     }
 
-    // 🚀 THUẬT TOÁN ĐÃ ĐƯỢC CHUẨN HÓA VÀ FIX LỖI ĐỌC PHẦN TỬ CUỐI MẢNG CHÍNH XÁC
+    // 🚀 THUẬT TOÁN ĐỒNG BỘ ĐÃ ĐƯỢC THÊM CƠ CHẾ KIỂM TRA PHẦN TỬ AN TOÀN TRÁNH BỊ SẬP LUỒNG GÁN INNERTEXT
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
-            // Đọc 1 dòng cuối cùng và trỏ đúng chỉ số mảng [length - 1] (Mốc tin mới nhất)
+            // Lấy dòng dữ liệu mới nhất xuất hiện ở cuối mảng History
             database.ref('/' + key + '/History').limitToLast(1).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
                     const dataValues = Object.values(historyData);
-                    // BẮT BUỘC: Lấy phần tử có index cuối cùng trong danh sách để nhận dữ liệu mới nhất từ ESP32
-                    const val = dataValues[dataValues.length - 1]; 
+                    const val = dataValues[dataValues.length - 1]; // bốc mốc phần tử mới nhất vừa đẩy lên
                     
                     if (val) {
-                        document.getElementById(key.toLowerCase() + '-at').innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
-                        document.getElementById(key.toLowerCase() + '-ah').innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
-                        if (key !== 'Node3') {
-                            document.getElementById(key.toLowerCase() + '-st').innerText = Number(val.soil_temperature || 0).toFixed(1) + ' °C';
-                            document.getElementById(key.toLowerCase() + '-sh').innerText = Number(val.soil_humidity || 0).toFixed(1) + ' %';
-                            document.getElementById(key.toLowerCase() + '-ec').innerText = (val.soil_ec || 0) + ' uS/cm';
+                        // VÁ LỖI AN TOÀN: Chỉ gán dữ liệu khi thẻ ID thực sự tồn tại trên giao diện DOM
+                        const elAt = document.getElementById(key.toLowerCase() + '-at');
+                        const elAh = document.getElementById(key.toLowerCase() + '-ah');
+                        
+                        if (elAt && elAh) {
+                            elAt.innerText = Number(val.air_temperature || 0).toFixed(1) + ' °C';
+                            elAh.innerText = Number(val.air_humidity || 0).toFixed(1) + ' %';
+                            
+                            if (key !== 'Node3') {
+                                const elSt = document.getElementById(key.toLowerCase() + '-st');
+                                const elSh = document.getElementById(key.toLowerCase() + '-sh');
+                                const elEc = document.getElementById(key.toLowerCase() + '-ec');
+                                if (elSt && elSh && elEc) {
+                                    elSt.innerText = Number(val.soil_temperature || 0).toFixed(1) + ' °C';
+                                    elSh.innerText = Number(val.soil_humidity || 0).toFixed(1) + ' %';
+                                    elEc.innerText = (val.soil_ec || 0) + ' uS/cm';
+                                }
+                            }
                         }
                     }
                 }
             });
 
-            // Đồng bộ dữ liệu bảng lịch sử 10 dòng
+            // Đồng bộ luồng mảng lịch sử 10 dòng
             database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
@@ -307,9 +318,12 @@
                         });
                     });
                     
-                    const currentActiveTab = document.querySelector('.tab-content-view.active').id;
-                    if (currentActiveTab === 'content-database') renderTableData();
-                    if (currentActiveTab === 'content-charts') renderChartGraphics();
+                    const activeView = document.querySelector('.tab-content-view.active');
+                    if (activeView) {
+                        const currentActiveTab = activeView.id;
+                        if (currentActiveTab === 'content-database') renderTableData();
+                        if (currentActiveTab === 'content-charts') renderChartGraphics();
+                    }
                 }
             });
         });
@@ -318,6 +332,7 @@
     function renderTableData() {
         const headNode = document.getElementById('table-head-view');
         const bodyNode = document.getElementById('table-body-view');
+        if (!headNode || !bodyNode) return;
         
         if (activeDbNode === 'Node3') {
             headNode.innerHTML = `<tr><th>Mốc thời gian</th><th>Nhiệt độ khí</th><th>Độ ẩm khí</th></tr>`;
