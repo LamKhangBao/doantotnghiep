@@ -33,13 +33,20 @@
         .sensor-title { font-size: 14px; color: #64748b; font-weight: 500; }
         .sensor-val { font-size: 20px; font-weight: 700; }
 
-        /* Table Components */
+        /* Table & Controls */
         .table-container { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
         .table thead th { background-color: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; padding: 14px; }
         
-        .node-selector-btn { padding: 10px 24px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: 0.2s; border: 1px solid #e2e8f0; background: white; color: #475569; }
+        /* Phong cách nút Tab điều hướng dạng viên thuốc */
+        .node-selector-btn {
+            padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 14px;
+            transition: 0.2s; border: 1px solid #e2e8f0; background: white; color: #475569;
+        }
         .node-selector-btn:hover { background: #f8fafc; }
-        .node-selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+        .node-selector-btn.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
 
         canvas { width: 100% !important; height: 380px !important; }
         [v-cloak] { display: none; }
@@ -95,7 +102,7 @@
             <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
                 <div>
                     <h3 class="fw-800 m-0 text-dark">{{ tabTitle }}</h3>
-                    <p class="text-muted small m-0 mt-1">Dữ liệu lưu trữ nội bộ phân nhánh đồng bộ</p>
+                    <p class="text-muted small m-0 mt-1">Dữ liệu lưu trữ đám mây phân nhánh đồng bộ</p>
                 </div>
                 <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;">
                     <span class="spinner-grow spinner-grow-sm" role="status"></span> HỆ THỐNG TRỰC TUYẾN
@@ -107,8 +114,8 @@
                     <div v-for="i in [1, 2]" class="col-md-4">
                         <div class="node-card">
                             <div class="node-header text-dark d-flex justify-content-between align-items-center">
-                                <span><i class="fa-solid fa-tower-broadcast text-primary me-2"></i>TRẠM PHẦN CỨNG 0{{i}}</span>
-                                <span class="badge bg-light text-secondary">Full Sensors</span>
+                                <span><i class="fa-solid fa-tower-broadcast text-primary me-2"></i>TRẠM TRONG NHÀ MÀNG 0{{i}}</span>
+                                <span class="badge bg-light text-secondary">Trong nhà</span>
                             </div>
                             <div class="sensor-row">
                                 <div class="sensor-info"><div class="sensor-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fa-solid fa-temperature-half"></i></div><span class="sensor-title">Nhiệt độ khí (SHT20)</span></div>
@@ -119,11 +126,11 @@
                                 <span class="sensor-val">{{ nodes['Node'+i].air_humidity }} %</span>
                             </div>
                             <div class="sensor-row">
-                                <div class="sensor-info"><div class="sensor-icon" style="background:#fdfaec; color:#b45309;"><i class="fa-solid fa-mountain"></i></div><span class="sensor-title">Nhiệt độ bề mặt đất</span></div>
+                                <div class="sensor-info"><div class="sensor-icon" style="background:#fdfaec; color:#b45309;"><i class="fa-solid fa-mountain"></i></div><span class="sensor-title">Nhiệt độ đất</span></div>
                                 <span class="sensor-val">{{ nodes['Node'+i].soil_temperature }} °C</span>
                             </div>
                             <div class="sensor-row">
-                                <div class="sensor-info"><div class="sensor-icon" style="background:#fdf2f8; color:#db2777;"><i class="fa-solid fa-water"></i></div><span class="sensor-title">Độ ẩm cơ giới đất</span></div>
+                                <div class="sensor-info"><div class="sensor-icon" style="background:#fdf2f8; color:#db2777;"><i class="fa-solid fa-water"></i></div><span class="sensor-title">Độ ẩm đất</span></div>
                                 <span class="sensor-val">{{ nodes['Node'+i].soil_humidity }} %</span>
                             </div>
                             <div class="sensor-row">
@@ -134,21 +141,21 @@
                     </div>
                     
                     <div class="col-md-4">
-                        <div class="node-card" style="border-top: 4px solid var(--primary);">
-                            <div class="node-header text-primary d-flex justify-content-between align-items-center">
-                                <span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM PHẦN CỨNG 03</span>
-                                <span class="badge bg-primary-subtle text-primary">Air Only</span>
+                        <div class="node-card" style="border-top: 4px solid var(--warning);">
+                            <div class="node-header text-warning d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM BÊN NGOÀI NHÀ MÀNG 03</span>
+                                <span class="badge bg-warning-subtle text-warning">Air Only (Ngoài trời)</span>
                             </div>
                             <div class="sensor-row">
                                 <div class="sensor-info"><div class="sensor-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fa-solid fa-temperature-half"></i></div><span class="sensor-title">Nhiệt độ khí (SHT20)</span></div>
-                                <span class="sensor-val text-primary">{{ nodes.Node3.air_temperature }} °C</span>
+                                <span class="sensor-val text-warning">{{ nodes.Node3.air_temperature }} °C</span>
                             </div>
                             <div class="sensor-row">
                                 <div class="sensor-info"><div class="sensor-icon" style="background:#f0fdf4; color:#22c55e;"><i class="fa-solid fa-droplet"></i></div><span class="sensor-title">Độ ẩm khí (SHT20)</span></div>
-                                <span class="sensor-val text-primary">{{ nodes.Node3.air_humidity }} %</span>
+                                <span class="sensor-val text-warning">{{ nodes.Node3.air_humidity }} %</span>
                             </div>
                             <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;">
-                                <i class="fa-solid fa-circle-info me-1"></i> Khối đất không được cấu hình cho trạm này.
+                                <i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng bên ngoài nhà màng, không lắp cảm biến đất.
                             </div>
                         </div>
                     </div>
@@ -157,24 +164,16 @@
 
             <div v-if="currentTab == 'database'">
                 <div class="table-container">
-                    
                     <div class="d-flex gap-2 mb-4 justify-content-start border-bottom pb-3">
-                        <button @click="activeDbNode = 'Node1'" class="node-selector-btn" :class="{active: activeDbNode == 'Node1'}">
-                            <i class="fa-solid fa-server me-1"></i> Xem dữ liệu Trạm 01
-                        </button>
-                        <button @click="activeDbNode = 'Node2'" class="node-selector-btn" :class="{active: activeDbNode == 'Node2'}">
-                            <i class="fa-solid fa-server me-1"></i> Xem dữ liệu Trạm 02
-                        </button>
-                        <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}">
-                            <i class="fa-solid fa-server me-1"></i> Xem dữ liệu Trạm 03
-                        </button>
+                        <button @click="activeDbNode = 'Node1'" class="node-selector-btn" :class="{active: activeDbNode == 'Node1'}"><i class="fa-solid fa-server me-1"></i> Xem Trạm 01 (Trong nhà)</button>
+                        <button @click="activeDbNode = 'Node2'" class="node-selector-btn" :class="{active: activeDbNode == 'Node2'}"><i class="fa-solid fa-server me-1"></i> Xem Trạm 02 (Trong nhà)</button>
+                        <button @click="activeDbNode = 'Node3'" class="node-selector-btn" :class="{active: activeDbNode == 'Node3'}"><i class="fa-solid fa-cloud-sun me-1"></i> Xem Trạm 03 (Ngoài nhà màng)</button>
                     </div>
 
                     <div class="table-responsive">
                         <h5 class="fw-700 text-secondary mb-3">
-                            <i class="fa-solid fa-table-list me-2 text-primary"></i>Lịch sử trích xuất lồng trong {{ activeDbNode == 'Node1' ? 'Node1/History' : activeDbNode == 'Node2' ? 'Node2/History' : 'Node3/History' }}
+                            <i class="fa-solid fa-table-list me-2 text-primary"></i>Nhật ký bảng (Hiển thị tối đa 10 dữ liệu gần nhất)
                         </h5>
-                        
                         <table class="table table-hover align-middle border-0 m-0">
                             <thead>
                                 <tr>
@@ -196,9 +195,7 @@
                                     <td v-if="activeDbNode != 'Node3'" class="text-dark fw-bold">{{ log.ec }} <small class="text-muted">uS/cm</small></td>
                                 </tr>
                                 <tr v-if="logs[activeDbNode].length === 0">
-                                    <td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small">
-                                        <i class="fa-solid fa-clock-rotate-left fa-spin me-2"></i>Đang quét nhánh History nội bộ của từng Node...
-                                    </td>
+                                    <td :colspan="activeDbNode != 'Node3' ? 6 : 3" class="text-center py-4 text-muted small"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang kết nối Cloud...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -210,7 +207,16 @@
                 <div class="row">
                     <div class="col-12 mb-4">
                         <div class="table-container">
-                            <h5 class="fw-700 mb-4 text-dark"><i class="fa-solid fa-chart-line me-2 text-primary"></i>Đồ thị diễn tiến nhiệt độ không khí môi trường (Mô hình so sánh đa trạm)</h5>
+                            
+                            <div class="d-flex gap-2 mb-4 justify-content-start border-bottom pb-3 flex-wrap">
+                                <button @click="activeChartType = 'air_temp'" class="node-selector-btn" :class="{active: activeChartType == 'air_temp'}"><i class="fa-solid fa-temperature-half me-1"></i> Biểu đồ Nhiệt Độ Khí</button>
+                                <button @click="activeChartType = 'air_hum'" class="node-selector-btn" :class="{active: activeChartType == 'air_hum'}"><i class="fa-solid fa-droplet me-1"></i> Biểu đồ Độ Ẩm Khí</button>
+                                <button @click="activeChartType = 'soil_temp'" class="node-selector-btn" :class="{active: activeChartType == 'soil_temp'}"><i class="fa-solid fa-mountain me-1"></i> Biểu đồ Nhiệt Độ Đất</button>
+                                <button @click="activeChartType = 'soil_hum'" class="node-selector-btn" :class="{active: activeChartType == 'soil_hum'}"><i class="fa-solid fa-water me-1"></i> Biểu đồ Độ Ẩm Đất</button>
+                                <button @click="activeChartType = 'soil_ec'" class="node-selector-btn" :class="{active: activeChartType == 'soil_ec'}"><i class="fa-solid fa-bolt me-1"></i> Biểu đồ Chỉ số EC</button>
+                            </div>
+
+                            <h5 class="fw-700 mb-4 text-dark"><i class="fa-solid fa-chart-line me-2 text-primary"></i>{{ chartNameDisplay }}</h5>
                             <div style="position: relative; height:380px;"><canvas id="academicTempChart"></canvas></div>
                         </div>
                     </div>
@@ -230,14 +236,15 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const { createApp, ref, reactive, watch } = Vue;
+    const { createApp, ref, reactive, watch, computed } = Vue;
 
     createApp({
         setup() {
             const isLoggedIn = ref(false);
             const currentTab = ref('realtime');
             const activeDbNode = ref('Node1'); 
-            const tabTitle = ref('Mục 1: Thông số trạm quan thực thời gian thực');
+            const activeChartType = ref('air_temp'); // Quản lý 5 nút biểu đồ
+            const tabTitle = ref('Mục 1: Thông số trạm quan trắc thời gian thực');
             const loginForm = reactive({ user: '', pass: '' });
             const loginError = ref(false);
             let chartInstance = null;
@@ -249,6 +256,15 @@
             });
 
             const logs = reactive({ Node1: [], Node2: [], Node3: [] });
+
+            // Tự động cập nhật tiêu đề biểu đồ khoa học theo nút bấm đang bật
+            const chartNameDisplay = computed(() => {
+                if (activeChartType.value === 'air_temp') return 'Đồ thị phân tích so sánh diễn tiến Nhiệt Độ Không Khí (°C)';
+                if (activeChartType.value === 'air_hum') return 'Đồ thị phân tích so sánh diễn tiến Độ Ẩm Không Khí (%)';
+                if (activeChartType.value === 'soil_temp') return 'Đồ thị phân tích so sánh diễn tiến Nhiệt Độ Đất (°C)';
+                if (activeChartType.value === 'soil_hum') return 'Đồ thị phân tích so sánh diễn tiến Độ Ẩm Đất (%)';
+                return 'Đồ thị phân tích so sánh diễn tiến Chỉ số Dẫn Điện EC Đất (uS/cm)';
+            });
 
             const handleLogin = () => {
                 if (loginForm.user === 'doantotnghiep' && loginForm.pass === '12345678') {
@@ -263,11 +279,9 @@
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
 
                 nodeKeys.forEach(key => {
-                    // 1. Đọc dữ liệu Realtime hiện tại nằm ở gốc của từng Node
                     database.ref('/' + key).on('value', (snapshot) => {
                         const val = snapshot.val();
                         if (val) {
-                            // Chỉ lấy dữ liệu biến đơn tại gốc, loại bỏ object History để tránh đè cấu trúc
                             nodes[key].air_temperature = val.air_temperature || 0;
                             nodes[key].air_humidity = val.air_humidity || 0;
                             if (key !== 'Node3') {
@@ -278,8 +292,8 @@
                         }
                     });
 
-                    // 2. Đọc cấu trúc lịch sử lồng sâu bên trong: /[Tên_Node]/History
-                    database.ref('/' + key + '/History').limitToLast(40).on('value', (snapshot) => {
+                    // KHỐI KHỐNG CHẾ HIỂN THỊ CHÍNH XÁC ĐÚNG 10 DỮ LIỆU GẦN NHẤT (.limitToLast(10))
+                    database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                         const historyData = snapshot.val();
                         if (historyData) {
                             const tempArray = [];
@@ -294,6 +308,7 @@
                                     ec: logItem.soil_ec || 0
                                 });
                             });
+                            // Đảo mảng hoặc giữ nguyên tùy theo chiều hiển thị bạn muốn (Đang giữ nguyên từ cũ đến mới phục vụ vẽ chart)
                             logs[key] = tempArray;
                             if (currentTab.value === 'charts') { renderChart(); }
                         }
@@ -301,22 +316,50 @@
                 });
             };
 
+            // Hàm bóc tách dữ liệu và vẽ chính xác 1 trong 5 loại biểu đồ đang được bấm nút chọn
             const renderChart = () => {
                 setTimeout(() => {
                     const ctx = document.getElementById('academicTempChart');
                     if (!ctx) return;
                     if (chartInstance) { chartInstance.destroy(); }
+                    
                     const labels = logs.Node1.map(l => l.time);
+                    let datasets = [];
+
+                    // Xử lý dữ liệu động cho từng nút bấm biểu đồ riêng biệt
+                    if (activeChartType.value === 'air_temp') {
+                        datasets = [
+                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airT), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airT), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.04)', fill: true, tension: 0.25, borderWidth: 3 }
+                        ];
+                    } else if (activeChartType.value === 'air_hum') {
+                        datasets = [
+                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.airH), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.airH), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 3 (Ngoài nhà màng)', data: logs.Node3.map(l => l.airH), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.04)', fill: true, tension: 0.25, borderWidth: 3 }
+                        ];
+                    } else if (activeChartType.value === 'soil_temp') {
+                        datasets = [
+                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.soilT), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.soilT), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.04)', fill: true, tension: 0.25, borderWidth: 3 }
+                            // Trạm 3 tự động không vẽ đường vì không có cảm biến đất
+                        ];
+                    } else if (activeChartType.value === 'soil_hum') {
+                        datasets = [
+                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.soilH), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.soilH), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.04)', fill: true, tension: 0.25, borderWidth: 3 }
+                        ];
+                    } else if (activeChartType.value === 'soil_ec') {
+                        datasets = [
+                            { label: 'Trạm 1 (Trong nhà)', data: logs.Node1.map(l => l.ec), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
+                            { label: 'Trạm 2 (Trong nhà)', data: logs.Node2.map(l => l.ec), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.04)', fill: true, tension: 0.25, borderWidth: 3 }
+                        ];
+                    }
+
                     chartInstance = new Chart(ctx, {
                         type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                { label: 'Trạm 01', data: logs.Node1.map(l => l.airT), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
-                                { label: 'Trạm 02', data: logs.Node2.map(l => l.airT), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.04)', fill: true, tension: 0.25, borderWidth: 3 },
-                                { label: 'Trạm 03', data: logs.Node3.map(l => l.airT), borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.04)', fill: true, tension: 0.25, borderWidth: 3 }
-                            ]
-                        },
+                        data: { labels: labels, datasets: datasets },
                         options: { 
                             responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
                             scales: { y: { grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
@@ -325,13 +368,17 @@
                 }, 100);
             };
 
+            // Lắng nghe nút chuyển đổi menu chính
             watch(currentTab, (newTab) => {
-                if (newTab === 'realtime') tabTitle.value = ' Thông số trạm quan trắc thời gian thực';
-                if (newTab === 'database') tabTitle.value = ' Cơ sở dữ liệu lịch sử lưu trữ';
-                if (newTab === 'charts') { tabTitle.value = ' Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
+                if (newTab === 'realtime') tabTitle.value = 'Mục 1: Thông số trạm quan trắc thời gian thực';
+                if (newTab === 'database') tabTitle.value = 'Mục 2: Cơ sở dữ liệu lịch sử lưu trữ';
+                if (newTab === 'charts') { tabTitle.value = 'Mục 3: Đồ thị phân tích diễn tiến môi trường'; renderChart(); }
             });
 
-            return { isLoggedIn, currentTab, activeDbNode, tabTitle, loginForm, loginError, handleLogin, logout, nodes, logs };
+            // Lắng nghe 5 nút chuyển đổi biểu đồ con để vẽ lại ngay lập tức
+            watch(activeChartType, () => { if (currentTab.value === 'charts') renderChart(); });
+
+            return { isLoggedIn, currentTab, activeDbNode, activeChartType, chartNameDisplay, tabTitle, loginForm, loginError, handleLogin, logout, nodes, logs };
         }
     }).mount('#app');
 </script>
