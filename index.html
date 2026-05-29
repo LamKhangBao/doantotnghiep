@@ -7,7 +7,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2 family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root { --primary: #059669; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --dark-bg: #064e3b; --sidebar-width: 280px; }
@@ -93,7 +93,7 @@
 
         <main id="main-content">
             <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
-                <div><h3 id="panel-title" class="fw-800 m-0 text-dark">Mục 1: Thông số trạm quan thực thời gian thực</h3><p class="text-muted small m-0 mt-1">Dữ liệu đồng bộ mã nguồn lồng nội bộ Firebase</p></div>
+                <div><h3 id="panel-title" class="fw-800 m-0 text-dark">Mục 1: Thông số trạm quan trắc thời gian thực</h3><p class="text-muted small m-0 mt-1">Dữ liệu đồng bộ mã nguồn lồng nội bộ Firebase</p></div>
                 <div class="badge bg-success px-3 py-2 d-flex align-items-center gap-2" style="border-radius:10px; font-size: 13px;"><span class="spinner-grow spinner-grow-sm"></span> LIVE CONNECTED</div>
             </header>
 
@@ -124,7 +124,7 @@
                             <div class="node-header text-warning d-flex justify-content-between align-items-center"><span><i class="fa-solid fa-cloud-sun me-2"></i>TRẠM NGOÀI NHÀ MÀNG 03</span><span class="badge bg-warning-subtle text-warning">Outside</span></div>
                             <div class="sensor-row"><span>Nhiệt độ khí (SHT20)</span><span id="n3-at" class="sensor-val text-warning">--.- °C</span></div>
                             <div class="sensor-row"><span>Độ ẩm khí (SHT20)</span><span id="n3-ah" class="sensor-val text-warning">--.- %</span></div>
-                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-cloud me-1"></i> Trạm đối chứng khí tượng ngoài trời (Mát hơn và khô hơn bên trong).</div>
+                            <div class="p-4 text-center text-muted bg-light border-top" style="font-size: 12px; font-style: italic;"><i class="fa-solid fa-circle-info me-1"></i> Trạm đối chứng khí tượng ngoài trời (Mát hơn và khô hơn bên trong).</div>
                         </div>
                     </div>
                 </div>
@@ -192,6 +192,7 @@
     const now = new Date();
     document.getElementById('filterTime').value = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0') + ":" + String(now.getSeconds()).padStart(2, '0');
 
+    // Mảng dữ liệu tĩnh lưu trữ
     const logs = { Node1: [], Node2: [], Node3: [] };
 
     function togglePasswordVisibility() {
@@ -264,18 +265,20 @@
         renderChartGraphics();
     }
 
-    // 🚀 ĐỒNG BỘ TRIỆT ĐỂ: BỐC PHẦN TỬ MỚI NHẤT TRONG HISTORY ĐƯA LÊN MỤC 1 REALTIME NGAY KHI MỞ TRANG
+    // 🚀 THUẬT TOÁN ĐỒNG BỘ MỚI CHỐNG KẸT MẢNG VÀ PHỤC HỒI BIỂU ĐỒ 10 DÒNG vĩnh viễn
     function initFirebaseConnection() {
         const nodeKeys = ['Node1', 'Node2', 'Node3'];
         nodeKeys.forEach(key => {
             
+            // Lắng nghe cụm History dưới dạng lặp quét Object.keys không xoá mảng bừa bãi
             database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
-                    logs[key] = []; 
+                    const tempArray = []; // Mảng trung gian bóc tách sạch sẽ
+                    
                     Object.keys(historyData).forEach(id => {
                         const logItem = historyData[id];
-                        logs[key].push({
+                        tempArray.push({
                             time: String(logItem.time_log || "").replace(/"/g, ""),
                             airT: Number(logItem.air_temperature || 0).toFixed(1), 
                             airH: Number(logItem.air_humidity || 0).toFixed(1),   
@@ -285,7 +288,10 @@
                         });
                     });
 
-                    // Tách biệt gán dữ liệu Realtime từ phần tử mới nhất [length - 1] an toàn chống crash
+                    // Gán mảng trung gian vào mảng logs chính thức sau khi quét xong (Đầy đủ 10 dòng vĩnh viễn)
+                    logs[key] = tempArray;
+
+                    // 1. CẬP NHẬT REALTIME MỤC 1: Lấy chuẩn xác phần tử cuối cùng vừa hoàn tất của mảng
                     if (logs[key].length > 0) {
                         const val = logs[key][logs[key].length - 1]; 
                         
@@ -309,6 +315,7 @@
                         }
                     }
                     
+                    // Vẽ lại màn hình động theo tab đang bật
                     const activeView = document.querySelector('.tab-content-view.active');
                     if (activeView) {
                         const currentActiveTab = activeView.id;
