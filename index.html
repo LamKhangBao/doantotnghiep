@@ -84,7 +84,7 @@
                 
                 <div class="px-4 py-1 text-emerald-200 small fw-600" style="font-size: 12px; line-height: 1.6;">
                     Nguyễn Phúc Bảo Khang : 22138043<br>
-                    Phạm Thế Kiệt : 22138051<br>
+                    Phạm Thế Kiệt : 22138051
                 </div>
                 
                 <a href="#" @click="logout" class="nav-link text-danger mt-4"><i class="fa-solid fa-power-off"></i> Đăng xuất hệ thống</a>
@@ -170,11 +170,11 @@
             <div v-if="currentTab == 'charts'">
                 <div class="table-container">
                     <div class="d-flex gap-2 mb-4 border-bottom pb-3 flex-wrap">
-                        <button @click="activeChartType = 'air_temp'" class="node-selector-btn" :class="{active: activeChartType = 'air_temp'}">Nhiệt Độ Khí</button>
-                        <button @click="activeChartType = 'air_hum'" class="node-selector-btn" :class="{active: activeChartType = 'air_hum'}">Độ Ẩm Khí</button>
-                        <button @click="activeChartType = 'soil_temp'" class="node-selector-btn" :class="{active: activeChartType = 'soil_temp'}">Nhiệt Độ Đất</button>
-                        <button @click="activeChartType = 'soil_hum'" class="node-selector-btn" :class="{active: activeChartType = 'soil_hum'}">Độ Ẩm Đất</button>
-                        <button @click="activeChartType = 'soil_ec'" class="node-selector-btn" :class="{active: activeChartType = 'soil_ec'}">Chỉ số EC</button>
+                        <button @click="activeChartType = 'air_temp'" class="node-selector-btn" :class="{active: activeChartType === 'air_temp'}">Nhiệt Độ Khí</button>
+                        <button @click="activeChartType = 'air_hum'" class="node-selector-btn" :class="{active: activeChartType === 'air_hum'}">Độ Ẩm Khí</button>
+                        <button @click="activeChartType = 'soil_temp'" class="node-selector-btn" :class="{active: activeChartType === 'soil_temp'}">Nhiệt Độ Đất</button>
+                        <button @click="activeChartType = 'soil_hum'" class="node-selector-btn" :class="{active: activeChartType === 'soil_hum'}">Độ Ẩm Đất</button>
+                        <button @click="activeChartType = 'soil_ec'" class="node-selector-btn" :class="{active: activeChartType === 'soil_ec'}">Chỉ số EC</button>
                     </div>
                     <h5 class="fw-700 mb-4 text-dark"><i class="fa-solid fa-chart-line text-emerald-600 me-2"></i>{{ chartNameDisplay }}</h5>
                     <div style="position: relative; height:380px;"><canvas id="academicTempChart"></canvas></div>
@@ -209,7 +209,6 @@
             const filterDate = ref(new Date().toISOString().split('T')[0]); 
             let chartInstance = null;
 
-            // Đảm bảo khởi tạo Object cứng ngay từ đầu để tránh lỗi render undefined
             const nodes = reactive({
                 Node1: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
                 Node2: { air_temperature: 0, air_humidity: 0, soil_temperature: 0, soil_humidity: 0, soil_ec: 0 },
@@ -218,10 +217,10 @@
 
             const logs = reactive({ Node1: [], Node2: [], Node3: [] });
 
-            // CẢI TIẾN CHỐNG CRASH: Tạo một Computed tính toán mảng đảo ngược an toàn, không can thiệp trực tiếp vào HTML
+            // Computed tính toán mảng đảo ngược an toàn cho bảng mục 2
             const reversedLogs = computed(() => {
                 const currentLogs = logs[activeDbNode.value] || [];
-                return [...currentLogs].reverse(); 
+                return [...currentLogs].reverse();
             });
 
             const chartNameDisplay = computed(() => {
@@ -261,7 +260,7 @@
                 const nodeKeys = ['Node1', 'Node2', 'Node3'];
                 nodeKeys.forEach(key => {
                     
-                    // Luồng 1: Biến phẳng gốc nuôi Realtime Mục 1 chuẩn xác
+                    // Luồng 1: Đồng bộ biến phẳng gốc nuôi Realtime Mục 1 chuẩn xác tức thì
                     database.ref('/' + key).on('value', (snapshot) => {
                         const val = snapshot.val();
                         if (val) {
@@ -275,7 +274,7 @@
                         }
                     });
 
-                    // Luồng 2: Luồng lịch sử quét sạch bằng .on('value') bọc Object.keys chống trùng lặp dữ liệu
+                    // Luồng 2: Luồng lịch sử gói lồng /History quét bằng phương pháp gán trung gian chống kẹt mảng
                     database.ref('/' + key + '/History').limitToLast(10).on('value', (snapshot) => {
                         const historyData = snapshot.val();
                         if (historyData) {
@@ -291,14 +290,13 @@
                                     ec: logItem.soil_ec || 0
                                 });
                             });
-                            logs[key] = tempArray; // Cập nhật mảng tĩnh một lần duy nhất
+                            logs[key] = tempArray;
                             if (currentTab.value === 'charts') { renderChart(); }
                         }
                     });
                 });
             };
 
-            // Hàm xuất Excel tách cột ngăn nắp chuẩn 100% bằng lệnh sep=,
             const exportCSVForCurrentNode = () => {
                 const targetLogs = logs[activeDbNode.value];
                 if (!targetLogs || targetLogs.length === 0) { alert("Chưa có dòng dữ liệu nào từ Firebase để xuất file!"); return; }
